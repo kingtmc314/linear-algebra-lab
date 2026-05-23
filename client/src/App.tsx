@@ -1,39 +1,200 @@
+// App.tsx — Linear Algebra Lab
+// Academic Precision Design: deep navy sidebar, clean content area
+// Language: bilingual Chinese/English via LanguageContext
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import Home from "./pages/Home";
+import { LanguageProvider, useLanguage } from "./contexts/LanguageContext";
+import MatrixPage from "./pages/MatrixPage";
+import LinearSystemPage from "./pages/LinearSystemPage";
+import VectorPage from "./pages/VectorPage";
+import { useState } from "react";
+import { Grid3X3, Sigma, ArrowRight, Menu, X, Globe } from "lucide-react";
 
+function Sidebar({ mobile, onClose }: { mobile?: boolean; onClose?: () => void }) {
+  const [location, navigate] = useLocation();
+  const { t, lang, setLang } = useLanguage();
 
-function Router() {
+  const navItems = [
+    { path: "/", label: t.navMatrix, icon: Grid3X3 },
+    { path: "/system", label: t.navLinearSystem, icon: Sigma },
+    { path: "/vector", label: t.navVector, icon: ArrowRight },
+  ];
+
   return (
-    <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
-      <Route component={NotFound} />
-    </Switch>
+    <aside
+      className={`flex flex-col h-full ${mobile ? "w-full" : "w-64"}`}
+      style={{ background: "var(--sidebar)", color: "var(--sidebar-foreground)" }}
+    >
+      {/* Logo / Title */}
+      <div className="px-5 py-6 border-b" style={{ borderColor: "var(--sidebar-border)" }}>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1
+              className="text-lg font-bold leading-tight"
+              style={{
+                fontFamily: "'IBM Plex Serif', serif",
+                color: "var(--sidebar-foreground)",
+              }}
+            >
+              {lang === "zh" ? "線性代數" : "Linear Algebra"}
+            </h1>
+            <p className="text-xs mt-0.5" style={{ color: "var(--sidebar-primary)", fontFamily: "'IBM Plex Mono', monospace" }}>
+              Lab
+            </p>
+          </div>
+          {mobile && onClose && (
+            <button onClick={onClose} className="p-1 rounded hover:bg-white/10 transition-colors">
+              <X className="w-5 h-5" style={{ color: "var(--sidebar-foreground)" }} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 px-3 py-4 space-y-1">
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = location === item.path;
+          return (
+            <button
+              key={item.path}
+              onClick={() => { navigate(item.path); onClose?.(); }}
+              className={`nav-item ${isActive ? "active" : ""}`}
+            >
+              <Icon className="w-4 h-4 flex-shrink-0" />
+              <span>{item.label}</span>
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* Language toggle + footer */}
+      <div className="px-3 py-4 border-t space-y-2" style={{ borderColor: "var(--sidebar-border)" }}>
+        <div className="flex items-center gap-2 px-1 mb-2">
+          <Globe className="w-3.5 h-3.5" style={{ color: "var(--sidebar-primary)" }} />
+          <span className="text-xs font-mono" style={{ color: "var(--sidebar-foreground)", opacity: 0.7 }}>
+            {t.language}
+          </span>
+        </div>
+        <div className="flex gap-1">
+          {(["zh", "en"] as const).map((l) => (
+            <button
+              key={l}
+              onClick={() => setLang(l)}
+              className={`flex-1 py-1.5 text-xs font-mono font-semibold rounded transition-all duration-150
+                ${lang === l
+                  ? "text-white"
+                  : "hover:bg-white/10"
+                }`}
+              style={{
+                background: lang === l ? "var(--sidebar-primary)" : "transparent",
+                color: lang === l ? "var(--sidebar-primary-foreground)" : "var(--sidebar-foreground)",
+              }}
+            >
+              {l === "zh" ? "中文" : "EN"}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs px-1 mt-2" style={{ color: "var(--sidebar-foreground)", opacity: 0.4, fontFamily: "'IBM Plex Mono', monospace" }}>
+          v1.0.0
+        </p>
+      </div>
+    </aside>
   );
 }
 
-// NOTE: About Theme
-// - First choose a default theme according to your design style (dark or light bg), than change color palette in index.css
-//   to keep consistent foreground/background color across components
-// - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
+function Layout() {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const { t } = useLanguage();
+  const [location] = useLocation();
+
+  const pageTitle: Record<string, string> = {
+    "/": t.navMatrix,
+    "/system": t.navLinearSystem,
+    "/vector": t.navVector,
+  };
+
+  return (
+    <div className="flex h-screen overflow-hidden">
+      {/* Desktop sidebar */}
+      <div className="hidden lg:flex flex-col flex-shrink-0 h-full border-r" style={{ borderColor: "var(--sidebar-border)" }}>
+        <Sidebar />
+      </div>
+
+      {/* Mobile sidebar overlay */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setMobileOpen(false)}
+          />
+          <div className="absolute left-0 top-0 bottom-0 w-72 flex flex-col shadow-xl">
+            <Sidebar mobile onClose={() => setMobileOpen(false)} />
+          </div>
+        </div>
+      )}
+
+      {/* Main content */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Mobile top bar */}
+        <header className="lg:hidden flex items-center gap-3 px-4 py-3 border-b border-border bg-card">
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="p-1.5 rounded hover:bg-secondary transition-colors"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          <span className="font-semibold text-sm" style={{ fontFamily: "'IBM Plex Serif', serif" }}>
+            {pageTitle[location] || t.appTitle}
+          </span>
+        </header>
+
+        {/* Desktop top bar */}
+        <header className="hidden lg:flex items-center justify-between px-8 py-4 border-b border-border bg-card/50 backdrop-blur-sm">
+          <div>
+            <h2 className="text-sm font-semibold text-foreground" style={{ fontFamily: "'IBM Plex Serif', serif" }}>
+              {pageTitle[location] || t.appTitle}
+            </h2>
+            <p className="text-xs text-muted-foreground font-mono">{t.appSubtitle}</p>
+          </div>
+          {/* Grid paper texture indicator */}
+          <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
+            <span className="w-2 h-2 rounded-full bg-accent inline-block" />
+            Linear Algebra Lab
+          </div>
+        </header>
+
+        {/* Page content */}
+        <main className="flex-1 overflow-y-auto">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+            <Switch>
+              <Route path="/" component={MatrixPage} />
+              <Route path="/system" component={LinearSystemPage} />
+              <Route path="/vector" component={VectorPage} />
+              <Route path="/404" component={NotFound} />
+              <Route component={NotFound} />
+            </Switch>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
 
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider
-        defaultTheme="light"
-        // switchable
-      >
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
+      <ThemeProvider defaultTheme="light">
+        <LanguageProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Layout />
+          </TooltipProvider>
+        </LanguageProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );
