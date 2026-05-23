@@ -144,11 +144,11 @@
 
 ## Phase 15: 精確值擴充（矩陣 n 次方 + 行列式）
 
-- [ ] 更新 matrixPower.ts：P、P⁻¹、Λ^n 元素改用有理數算術，對角化步驟以精確分數 LaTeX 顯示
-- [ ] 更新 matrixMath.ts 行列式：展開步驟改用有理數算術，精確整數/分數顯示
-- [ ] 更新 MatrixPowerPage：結果顯示使用精確分數
-- [ ] 更新 MatrixPage：行列式結果顯示使用精確值
-- [ ] 所有測試通過，TypeScript 無錯誤
+- [x] 更新 matrixPower.ts：已有完整精確值系統（fmtExact, toFrac, fmtPower），無需修改
+- [x] 更新 matrixMath.ts 行列式：展開步驟改用有理數算術，精確整數/分數顯示（已完成於 Phase 15 Revised）
+- [x] 更新 MatrixPowerPage：已使用精確值顯示（原有系統）
+- [x] 更新 MatrixPage：行列式結果顯示使用精確值（已完成於 Phase 15 Revised）
+- [x] 所有測試通過，TypeScript 無錯誤
 
 ## Phase 15 (Revised): 精確值擴充（行列式 + 首頁修復）
 

@@ -32,6 +32,7 @@ export interface StepResult {
 export interface MatrixResult {
   result?: Matrix;
   scalar?: number;
+  scalarLatex?: string; // exact LaTeX for scalar result (e.g. determinant)
   steps: StepResult[];
   error?: string;
 }
@@ -466,7 +467,7 @@ export function matDeterminant(A: Matrix): MatrixResult {
       latex: `\\det(A) = ${ratToLatex(detRat)}`,
       value: detNum,
     });
-    return { scalar: detNum, steps };
+    return { scalar: detNum, scalarLatex: ratToLatex(detRat), steps };
   }
 
   if (n === 2) {
@@ -490,7 +491,7 @@ export function matDeterminant(A: Matrix): MatrixResult {
       latex: `= ${ratToLatex(ad)} - (${ratToLatex(bc)}) = ${ratToLatex(detRat)}`,
       value: detNum,
     });
-    return { scalar: detNum, steps };
+    return { scalar: detNum, scalarLatex: ratToLatex(detRat), steps };
   }
 
   // n >= 3: cofactor expansion along row 1 using exact rational arithmetic
@@ -536,7 +537,7 @@ export function matDeterminant(A: Matrix): MatrixResult {
     value: totalDetNum,
   });
 
-  return { scalar: totalDetNum, steps };
+  return { scalar: totalDetNum, scalarLatex: ratToLatex(totalDetRat), steps };
 }
 
 // ─── Inverse Matrix (Gauss-Jordan) ────────────────────────────────────────────

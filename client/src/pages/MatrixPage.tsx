@@ -445,7 +445,7 @@ export default function MatrixPage() {
               )}
               {result.scalar !== undefined && (
                 <KatexRenderer
-                  latex={`= ${fmt(result.scalar)}`}
+                  latex={`= ${(result as any).scalarLatex || fmt(result.scalar)}`}
                   displayMode={true}
                 />
               )}
