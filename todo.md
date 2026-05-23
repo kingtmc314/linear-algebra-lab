@@ -96,13 +96,13 @@
 
 ## Phase 11: 移除教學資源/教師登入，部署至 GitHub Pages
 
-- [ ] 刪除 DocumentsPage.tsx 及相關路由
-- [ ] 移除 App.tsx 中教師登入、navDocuments 側邊欄項目
-- [ ] 移除 DashboardLayout 中教師登入/登出 UI
-- [ ] 移除 server/routers.ts 中 documents 相關 tRPC procedures
-- [ ] 移除 drizzle/schema.ts 中 teacher_documents 表
-- [ ] 將應用轉為純靜態前端（移除 tRPC/後端依賴，改用純 React）
-- [ ] 調整 vite.config.ts：設定 base 為 GitHub repo 路徑
-- [ ] 新增 GitHub Actions workflow 自動部署至 gh-pages
-- [ ] 推送至 GitHub 並確認 Pages 部署成功
+- [x] 刪除 DocumentsPage.tsx 及相關路由
+- [x] 移除 App.tsx 中教師登入、navDocuments 側邊欄項目
+- [x] 移除 DashboardLayout 中教師登入/登出 UI
+- [x] 移除 tRPC/QueryClient providers，轉為純靜態前端
+- [x] 調整 vite.config.ts：設定 GITHUB_PAGES=true 時 base='/linear-algebra-lab/'
+- [x] 更新 deploy.yml：使用 GITHUB_PAGES env var + 複製 404.html
+- [x] 推送至 GitHub main 分支（源碼）
+- [x] 直接編譯並推送至 gh-pages 分支（靜態檔案）
+- [x] GitHub Pages 部署建置中
 - [ ] 儲存檢查點
