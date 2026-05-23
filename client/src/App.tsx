@@ -12,28 +12,14 @@ import MatrixPage from "./pages/MatrixPage";
 import LinearSystemPage from "./pages/LinearSystemPage";
 import VectorPage from "./pages/VectorPage";
 import KnowledgePage from "./pages/KnowledgePage";
-import DocumentsPage from "./pages/DocumentsPage";
 import EigenPage from "./pages/EigenPage";
 import MatrixPowerPage from "./pages/MatrixPowerPage";
 import { useState } from "react";
-import { Grid3X3, Sigma, ArrowRight, Menu, X, Globe, BookOpen, FileText, LogIn, LogOut, User, Sparkles, Zap } from "lucide-react";
-import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
-import { trpc } from "@/lib/trpc";
-import { toast } from "sonner";
+import { Grid3X3, Sigma, ArrowRight, Menu, X, Globe, BookOpen, Sparkles, Zap } from "lucide-react";
 
 function Sidebar({ mobile, onClose }: { mobile?: boolean; onClose?: () => void }) {
   const [location, navigate] = useLocation();
   const { t, lang, setLang } = useLanguage();
-  const { user, isAuthenticated } = useAuth();
-  const isAdmin = user?.role === "admin";
-
-  const logoutMutation = trpc.auth.logout.useMutation({
-    onSuccess: () => {
-      toast.success(lang === "zh" ? "已登出" : "Logged out");
-      window.location.reload();
-    },
-  });
 
   const navItems = [
     { path: "/", label: t.navMatrix, icon: Grid3X3 },
@@ -42,7 +28,6 @@ function Sidebar({ mobile, onClose }: { mobile?: boolean; onClose?: () => void }
     { path: "/eigen", label: t.navEigen, icon: Sparkles },
     { path: "/matrix-power", label: lang === "zh" ? "矩陣 n 次方" : "Matrix Power", icon: Zap },
     { path: "/knowledge", label: t.navKnowledge, icon: BookOpen },
-    { path: "/documents", label: t.navDocuments, icon: FileText },
   ];
 
   return (
@@ -77,7 +62,7 @@ function Sidebar({ mobile, onClose }: { mobile?: boolean; onClose?: () => void }
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-1">
-        {/* Divider label: Calculator */}
+        {/* Calculators section */}
         <p className="px-2 pb-1 text-xs font-semibold uppercase tracking-wider opacity-40" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
           {lang === "zh" ? "計算器" : "Calculators"}
         </p>
@@ -96,7 +81,7 @@ function Sidebar({ mobile, onClose }: { mobile?: boolean; onClose?: () => void }
           );
         })}
 
-        {/* Divider label: Resources */}
+        {/* Resources section */}
         <p className="px-2 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider opacity-40" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
           {lang === "zh" ? "學習資源" : "Resources"}
         </p>
@@ -116,9 +101,8 @@ function Sidebar({ mobile, onClose }: { mobile?: boolean; onClose?: () => void }
         })}
       </nav>
 
-      {/* Language toggle + auth + footer */}
+      {/* Language toggle + footer */}
       <div className="px-3 py-4 border-t space-y-3" style={{ borderColor: "var(--sidebar-border)" }}>
-        {/* Language switcher */}
         <div>
           <div className="flex items-center gap-2 px-1 mb-1.5">
             <Globe className="w-3.5 h-3.5" style={{ color: "var(--sidebar-primary)" }} />
@@ -144,46 +128,8 @@ function Sidebar({ mobile, onClose }: { mobile?: boolean; onClose?: () => void }
           </div>
         </div>
 
-        {/* Auth section */}
-        <div className="border-t pt-3" style={{ borderColor: "var(--sidebar-border)" }}>
-          {isAuthenticated && user ? (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 px-1">
-                <User className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--sidebar-primary)" }} />
-                <div className="min-w-0">
-                  <p className="text-xs font-medium truncate" style={{ color: "var(--sidebar-foreground)" }}>
-                    {user.name || user.email || "Teacher"}
-                  </p>
-                  {isAdmin && (
-                    <p className="text-xs opacity-60 font-mono" style={{ color: "var(--sidebar-primary)" }}>
-                      {lang === "zh" ? "教師" : "Teacher"}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <button
-                onClick={() => logoutMutation.mutate()}
-                className="w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded hover:bg-white/10 transition-colors"
-                style={{ color: "var(--sidebar-foreground)", opacity: 0.7 }}
-              >
-                <LogOut className="w-3.5 h-3.5" />
-                {lang === "zh" ? "登出" : "Log out"}
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => window.location.href = getLoginUrl()}
-              className="w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded hover:bg-white/10 transition-colors"
-              style={{ color: "var(--sidebar-foreground)", opacity: 0.7 }}
-            >
-              <LogIn className="w-3.5 h-3.5" />
-              {lang === "zh" ? "教師登入" : "Teacher Login"}
-            </button>
-          )}
-        </div>
-
         <p className="text-xs px-1" style={{ color: "var(--sidebar-foreground)", opacity: 0.4, fontFamily: "'IBM Plex Mono', monospace" }}>
-          v2.0.0
+          v3.0.0
         </p>
       </div>
     </aside>
@@ -202,7 +148,6 @@ function Layout() {
     "/eigen": t.navEigen,
     "/matrix-power": lang === "zh" ? "矩陣 n 次方" : "Matrix Power A^n",
     "/knowledge": t.navKnowledge,
-    "/documents": t.navDocuments,
   };
 
   return (
@@ -265,9 +210,6 @@ function Layout() {
             </Route>
             <Route path="/eigen" component={EigenPage} />
             <Route path="/matrix-power" component={MatrixPowerPage} />
-            <Route path="/documents">
-              {() => <DocumentsPage lang={lang} />}
-            </Route>
             <Route path="/404" component={NotFound} />
             <Route component={NotFound} />
           </Switch>

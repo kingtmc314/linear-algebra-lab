@@ -87,7 +87,11 @@ function vitePluginManusDebugCollector(): Plugin {
 
 const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector()];
 
+// GitHub Pages base path — set to repo name for gh-pages deployment
+const isGhPages = process.env.GITHUB_PAGES === 'true';
+
 export default defineConfig({
+  base: isGhPages ? '/linear-algebra-lab/' : '/',
   plugins,
   resolve: {
     alias: {

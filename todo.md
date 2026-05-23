@@ -93,3 +93,16 @@
 - [x] LinearSystemPage.tsx：方陣時雙欄顯示高斯消元法及逆矩陣法
 - [x] VectorPage.tsx 3D 模式：新增四心計算（重心 Centroid、內心 Incenter、外心 Circumcenter、垂心 Orthocenter）
 - [x] 所有測試通過，儲存檢查點
+
+## Phase 11: 移除教學資源/教師登入，部署至 GitHub Pages
+
+- [ ] 刪除 DocumentsPage.tsx 及相關路由
+- [ ] 移除 App.tsx 中教師登入、navDocuments 側邊欄項目
+- [ ] 移除 DashboardLayout 中教師登入/登出 UI
+- [ ] 移除 server/routers.ts 中 documents 相關 tRPC procedures
+- [ ] 移除 drizzle/schema.ts 中 teacher_documents 表
+- [ ] 將應用轉為純靜態前端（移除 tRPC/後端依賴，改用純 React）
+- [ ] 調整 vite.config.ts：設定 base 為 GitHub repo 路徑
+- [ ] 新增 GitHub Actions workflow 自動部署至 gh-pages
+- [ ] 推送至 GitHub 並確認 Pages 部署成功
+- [ ] 儲存檢查點
