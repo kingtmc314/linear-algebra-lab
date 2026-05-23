@@ -1,15 +1,16 @@
 // ============================================================
-// Matrix Math Library — Academic Precision Design
-// All operations return exact fractional results where possible
+// Matrix Math Library — Detailed Step-by-Step Derivations
+// Each operation returns steps showing HOW each result is obtained
 // ============================================================
 
 export type Matrix = number[][];
 
 export interface StepResult {
-  description: string;
+  descriptionZh: string;
+  descriptionEn: string;
+  latex: string;
   matrix?: Matrix;
   value?: number;
-  latex?: string;
 }
 
 export interface MatrixResult {
@@ -19,198 +20,432 @@ export interface MatrixResult {
   error?: string;
 }
 
-/** Create an m×n zero matrix */
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
 export function zeroMatrix(m: number, n: number): Matrix {
   return Array.from({ length: m }, () => Array(n).fill(0));
 }
 
-/** Create an n×n identity matrix */
 export function identityMatrix(n: number): Matrix {
   return Array.from({ length: n }, (_, i) =>
     Array.from({ length: n }, (_, j) => (i === j ? 1 : 0))
   );
 }
 
-/** Deep clone a matrix */
 export function cloneMatrix(m: Matrix): Matrix {
   return m.map((row) => [...row]);
 }
 
-/** Format a number for display (avoid -0) */
+/** Format a number: show fraction if possible, else decimal */
 export function fmt(n: number, decimals = 6): string {
   if (Object.is(n, -0)) return "0";
+  if (!isFinite(n)) return n > 0 ? "\\infty" : "-\\infty";
+  if (Math.abs(n) < 1e-10) return "0";
+  const frac = toFraction(n);
+  if (frac) return frac;
   const rounded = parseFloat(n.toFixed(decimals));
-  // Show as integer if possible
-  if (Number.isInteger(rounded)) return String(rounded);
-  // Trim trailing zeros
   return rounded.toString();
 }
 
-/** Matrix addition A + B */
+function toFraction(x: number): string | null {
+  if (Number.isInteger(x)) return String(x);
+  const tol = 1e-8;
+  for (let d = 2; d <= 120; d++) {
+    const num = Math.round(x * d);
+    if (Math.abs(num / d - x) < tol) {
+      if (num < 0) return `-\\frac{${-num}}{${d}}`;
+      return `\\frac{${num}}{${d}}`;
+    }
+  }
+  return null;
+}
+
+/** Convert a matrix to LaTeX bmatrix */
+export function matrixToLatex(M: Matrix, bracket: "b" | "p" | "v" = "b"): string {
+  const rows = M.map((row) => row.map((v) => fmt(v)).join(" & ")).join(" \\\\ ");
+  return `\\begin{${bracket}matrix} ${rows} \\end{${bracket}matrix}`;
+}
+
+function augMatrixLatex(aug: Matrix, n: number): string {
+  const rows = aug.map((row) => {
+    const left = row.slice(0, n).map(fmt).join(" & ");
+    const right = row.slice(n).map(fmt).join(" & ");
+    return `${left} & ${right}`;
+  });
+  const cols = "c".repeat(n) + "|" + "c".repeat(n);
+  return `\\left[\\begin{array}{${cols}} ${rows.join(" \\\\ ")} \\end{array}\\right]`;
+}
+
+// ─── Matrix Addition ──────────────────────────────────────────────────────────
+
 export function matAdd(A: Matrix, B: Matrix): MatrixResult {
   const steps: StepResult[] = [];
   if (A.length !== B.length || A[0].length !== B[0].length) {
     return { steps, error: "dim_mismatch" };
   }
-  const result = A.map((row, i) => row.map((val, j) => val + B[i][j]));
+  const m = A.length, n = A[0].length;
+
   steps.push({
-    description: `C[i][j] = A[i][j] + B[i][j]`,
-    matrix: result,
-    latex: `C = A + B`,
+    descriptionZh: `確認維度：A 和 B 均為 ${m}×${n} 矩陣，可以相加`,
+    descriptionEn: `Verify dimensions: both A and B are ${m}×${n} matrices — addition is valid`,
+    latex: `A = ${matrixToLatex(A)},\\quad B = ${matrixToLatex(B)}`,
   });
+
+  steps.push({
+    descriptionZh: "矩陣加法規則：對應位置元素相加",
+    descriptionEn: "Matrix addition rule: add corresponding elements",
+    latex: `(A+B)_{ij} = a_{ij} + b_{ij}`,
+  });
+
+  const result: Matrix = [];
+  for (let i = 0; i < m; i++) {
+    result.push([]);
+    const rowTerms: string[] = [];
+    for (let j = 0; j < n; j++) {
+      const a = A[i][j], b = B[i][j], s = a + b;
+      result[i].push(s);
+      const bStr = b < 0 ? `(${fmt(b)})` : fmt(b);
+      rowTerms.push(`${fmt(a)}+${bStr}=${fmt(s)}`);
+    }
+    steps.push({
+      descriptionZh: `第 ${i+1} 行逐元素計算`,
+      descriptionEn: `Row ${i+1} element-wise`,
+      latex: rowTerms.join(",\\quad "),
+    });
+  }
+
+  steps.push({
+    descriptionZh: "最終結果",
+    descriptionEn: "Final result",
+    latex: `A + B = ${matrixToLatex(result)}`,
+    matrix: result,
+  });
+
   return { result, steps };
 }
 
-/** Matrix subtraction A - B */
+// ─── Matrix Subtraction ───────────────────────────────────────────────────────
+
 export function matSub(A: Matrix, B: Matrix): MatrixResult {
   const steps: StepResult[] = [];
   if (A.length !== B.length || A[0].length !== B[0].length) {
     return { steps, error: "dim_mismatch" };
   }
-  const result = A.map((row, i) => row.map((val, j) => val - B[i][j]));
+  const m = A.length, n = A[0].length;
+
   steps.push({
-    description: `C[i][j] = A[i][j] - B[i][j]`,
-    matrix: result,
-    latex: `C = A - B`,
+    descriptionZh: `確認維度：A 和 B 均為 ${m}×${n} 矩陣，可以相減`,
+    descriptionEn: `Verify dimensions: both A and B are ${m}×${n} matrices — subtraction is valid`,
+    latex: `A = ${matrixToLatex(A)},\\quad B = ${matrixToLatex(B)}`,
   });
+
+  steps.push({
+    descriptionZh: "矩陣減法規則：(A−B)ᵢⱼ = Aᵢⱼ − Bᵢⱼ",
+    descriptionEn: "Matrix subtraction rule: (A−B)ᵢⱼ = Aᵢⱼ − Bᵢⱼ",
+    latex: `(A-B)_{ij} = a_{ij} - b_{ij}`,
+  });
+
+  const result: Matrix = [];
+  for (let i = 0; i < m; i++) {
+    result.push([]);
+    const rowTerms: string[] = [];
+    for (let j = 0; j < n; j++) {
+      const a = A[i][j], b = B[i][j], d = a - b;
+      result[i].push(d);
+      rowTerms.push(`${fmt(a)}-${fmt(b)}=${fmt(d)}`);
+    }
+    steps.push({
+      descriptionZh: `第 ${i+1} 行逐元素計算`,
+      descriptionEn: `Row ${i+1} element-wise`,
+      latex: rowTerms.join(",\\quad "),
+    });
+  }
+
+  steps.push({
+    descriptionZh: "最終結果",
+    descriptionEn: "Final result",
+    latex: `A - B = ${matrixToLatex(result)}`,
+    matrix: result,
+  });
+
   return { result, steps };
 }
 
-/** Matrix multiplication A × B */
+// ─── Matrix Multiplication ────────────────────────────────────────────────────
+
 export function matMul(A: Matrix, B: Matrix): MatrixResult {
   const steps: StepResult[] = [];
-  const m = A.length, n = A[0].length, p = B[0].length;
-  if (n !== B.length) {
+  const mA = A.length, nA = A[0].length, mB = B.length, nB = B[0].length;
+
+  if (nA !== mB) {
     return { steps, error: "dim_mismatch" };
   }
-  const result = zeroMatrix(m, p);
-  for (let i = 0; i < m; i++) {
-    for (let j = 0; j < p; j++) {
+
+  steps.push({
+    descriptionZh: `確認維度：A 為 ${mA}×${nA}，B 為 ${mB}×${nB}，結果 C 為 ${mA}×${nB}`,
+    descriptionEn: `Verify dimensions: A is ${mA}×${nA}, B is ${mB}×${nB}, result C is ${mA}×${nB}`,
+    latex: `A_{${mA}\\times${nA}} \\times B_{${mB}\\times${nB}} = C_{${mA}\\times${nB}}`,
+  });
+
+  steps.push({
+    descriptionZh: "矩陣乘法規則：Cᵢⱼ = 第 i 行與第 j 列的點積",
+    descriptionEn: "Matrix multiplication rule: Cᵢⱼ = dot product of row i and column j",
+    latex: `c_{ij} = \\sum_{k=1}^{${nA}} a_{ik} \\cdot b_{kj}`,
+  });
+
+  const result: Matrix = zeroMatrix(mA, nB);
+
+  for (let i = 0; i < mA; i++) {
+    for (let j = 0; j < nB; j++) {
+      const terms: string[] = [];
       let sum = 0;
-      for (let k = 0; k < n; k++) {
-        sum += A[i][k] * B[k][j];
+      for (let k = 0; k < nA; k++) {
+        const prod = A[i][k] * B[k][j];
+        sum += prod;
+        terms.push(`(${fmt(A[i][k])})(${fmt(B[k][j])})`);
       }
       result[i][j] = sum;
-    }
-  }
-  steps.push({
-    description: `C[i][j] = Σ A[i][k] × B[k][j]`,
-    matrix: result,
-    latex: `C = A \\times B`,
-  });
-  return { result, steps };
-}
-
-/** Transpose A^T */
-export function matTranspose(A: Matrix): MatrixResult {
-  const steps: StepResult[] = [];
-  const result = A[0].map((_, j) => A.map((row) => row[j]));
-  steps.push({
-    description: `A^T[i][j] = A[j][i]`,
-    matrix: result,
-    latex: `A^T`,
-  });
-  return { result, steps };
-}
-
-/** Scalar multiplication k·A */
-export function matScalar(A: Matrix, k: number): MatrixResult {
-  const steps: StepResult[] = [];
-  const result = A.map((row) => row.map((v) => k * v));
-  steps.push({
-    description: `(kA)[i][j] = k × A[i][j]`,
-    matrix: result,
-    latex: `${fmt(k)} \\cdot A`,
-  });
-  return { result, steps };
-}
-
-/** Determinant (recursive cofactor expansion) with steps */
-export function matDeterminant(A: Matrix): MatrixResult {
-  const steps: StepResult[] = [];
-  if (A.length !== A[0].length) {
-    return { steps, error: "square_required" };
-  }
-  const n = A.length;
-
-  function det(M: Matrix): number {
-    if (M.length === 1) return M[0][0];
-    if (M.length === 2) {
-      return M[0][0] * M[1][1] - M[0][1] * M[1][0];
-    }
-    let result = 0;
-    for (let j = 0; j < M.length; j++) {
-      const minor = M.slice(1).map((row) => row.filter((_, k) => k !== j));
-      result += M[0][j] * Math.pow(-1, j) * det(minor);
-    }
-    return result;
-  }
-
-  if (n === 2) {
-    const d = det(A);
-    steps.push({
-      description: `det(A) = a₁₁×a₂₂ − a₁₂×a₂₁ = ${fmt(A[0][0])}×${fmt(A[1][1])} − ${fmt(A[0][1])}×${fmt(A[1][0])}`,
-      value: d,
-      latex: `\\det(A) = ${fmt(A[0][0])} \\times ${fmt(A[1][1])} - ${fmt(A[0][1])} \\times ${fmt(A[1][0])} = ${fmt(d)}`,
-    });
-    return { scalar: d, steps };
-  }
-
-  if (n === 3) {
-    const d = det(A);
-    steps.push({
-      description: `Sarrus' Rule / Cofactor Expansion along Row 1`,
-      latex: `\\det(A) = ${fmt(d)}`,
-    });
-    // Show cofactor expansion
-    for (let j = 0; j < 3; j++) {
-      const minor = A.slice(1).map((row) => row.filter((_, k) => k !== j));
-      const cofactor = Math.pow(-1, j) * det(minor);
       steps.push({
-        description: `Cofactor C₁${j + 1} = (−1)^${j} × det(M₁${j + 1}) = ${fmt(cofactor)}`,
-        latex: `C_{1${j + 1}} = (-1)^{${j}} \\cdot \\det(M_{1${j + 1}}) = ${fmt(cofactor)}`,
+        descriptionZh: `計算 C[${i+1}][${j+1}]：第 ${i+1} 行 · 第 ${j+1} 列`,
+        descriptionEn: `Compute C[${i+1}][${j+1}]: row ${i+1} · col ${j+1}`,
+        latex: `c_{${i+1}${j+1}} = ${terms.join("+")} = ${fmt(sum)}`,
       });
     }
-    return { scalar: d, steps };
   }
 
-  const d = det(A);
   steps.push({
-    description: `Cofactor expansion along Row 1`,
-    value: d,
-    latex: `\\det(A) = ${fmt(d)}`,
+    descriptionZh: "最終結果",
+    descriptionEn: "Final result",
+    latex: `C = A \\times B = ${matrixToLatex(result)}`,
+    matrix: result,
   });
-  return { scalar: d, steps };
+
+  return { result, steps };
 }
 
-/** Inverse matrix using Gauss-Jordan elimination with steps */
-export function matInverse(A: Matrix): MatrixResult {
+// ─── Transpose ────────────────────────────────────────────────────────────────
+
+export function matTranspose(A: Matrix): MatrixResult {
+  const steps: StepResult[] = [];
+  const m = A.length, n = A[0].length;
+
+  steps.push({
+    descriptionZh: `輸入矩陣 A 為 ${m}×${n}，轉置後 Aᵀ 為 ${n}×${m}`,
+    descriptionEn: `Input A is ${m}×${n}; transpose Aᵀ is ${n}×${m}`,
+    latex: `A = ${matrixToLatex(A)}`,
+  });
+
+  steps.push({
+    descriptionZh: "轉置規則：(Aᵀ)ᵢⱼ = Aⱼᵢ（行列互換）",
+    descriptionEn: "Transpose rule: (Aᵀ)ᵢⱼ = Aⱼᵢ (swap rows and columns)",
+    latex: `(A^T)_{ij} = a_{ji}`,
+  });
+
+  // Show a few swap examples
+  const swaps: string[] = [];
+  for (let i = 0; i < m && swaps.length < 6; i++) {
+    for (let j = 0; j < n && swaps.length < 6; j++) {
+      if (i !== j) swaps.push(`a_{${i+1}${j+1}}=${fmt(A[i][j])} \\Rightarrow (A^T)_{${j+1}${i+1}}=${fmt(A[i][j])}`);
+    }
+  }
+  if (swaps.length > 0) {
+    steps.push({
+      descriptionZh: "元素位置互換示例：",
+      descriptionEn: "Example element position swaps:",
+      latex: swaps.join(",\\quad "),
+    });
+  }
+
+  const result = A[0].map((_, j) => A.map((row) => row[j]));
+
+  steps.push({
+    descriptionZh: "最終結果",
+    descriptionEn: "Final result",
+    latex: `A^T = ${matrixToLatex(result)}`,
+    matrix: result,
+  });
+
+  return { result, steps };
+}
+
+// ─── Scalar Multiplication ────────────────────────────────────────────────────
+
+export function matScalar(A: Matrix, k: number): MatrixResult {
+  const steps: StepResult[] = [];
+
+  steps.push({
+    descriptionZh: `純量 k = ${fmt(k)}，矩陣 A 為 ${A.length}×${A[0].length}`,
+    descriptionEn: `Scalar k = ${fmt(k)}, matrix A is ${A.length}×${A[0].length}`,
+    latex: `k = ${fmt(k)},\\quad A = ${matrixToLatex(A)}`,
+  });
+
+  steps.push({
+    descriptionZh: "純量乘法規則：每個元素乘以 k",
+    descriptionEn: "Scalar multiplication rule: multiply every element by k",
+    latex: `(kA)_{ij} = k \\cdot a_{ij}`,
+  });
+
+  const result: Matrix = [];
+  for (let i = 0; i < A.length; i++) {
+    result.push([]);
+    const rowTerms: string[] = [];
+    for (let j = 0; j < A[0].length; j++) {
+      const val = k * A[i][j];
+      result[i].push(val);
+      rowTerms.push(`${fmt(k)} \\times ${fmt(A[i][j])} = ${fmt(val)}`);
+    }
+    steps.push({
+      descriptionZh: `第 ${i+1} 行`,
+      descriptionEn: `Row ${i+1}`,
+      latex: rowTerms.join(",\\quad "),
+    });
+  }
+
+  steps.push({
+    descriptionZh: "最終結果",
+    descriptionEn: "Final result",
+    latex: `${fmt(k)} \\cdot A = ${matrixToLatex(result)}`,
+    matrix: result,
+  });
+
+  return { result, steps };
+}
+
+// ─── Determinant ──────────────────────────────────────────────────────────────
+
+function computeDetRaw(M: Matrix): number {
+  const n = M.length;
+  if (n === 1) return M[0][0];
+  if (n === 2) return M[0][0] * M[1][1] - M[0][1] * M[1][0];
+  let d = 0;
+  for (let j = 0; j < n; j++) {
+    const minor = M.slice(1).map((row) => row.filter((_, k) => k !== j));
+    d += M[0][j] * Math.pow(-1, j) * computeDetRaw(minor);
+  }
+  return d;
+}
+
+export function matDeterminant(A: Matrix): MatrixResult {
   const steps: StepResult[] = [];
   const n = A.length;
+
   if (n !== A[0].length) {
     return { steps, error: "square_required" };
   }
 
-  // Augment [A | I]
+  steps.push({
+    descriptionZh: `計算 ${n}×${n} 方陣的行列式`,
+    descriptionEn: `Computing determinant of ${n}×${n} square matrix`,
+    latex: `A = ${matrixToLatex(A)}`,
+  });
+
+  if (n === 1) {
+    steps.push({
+      descriptionZh: "1×1 矩陣的行列式等於其唯一元素",
+      descriptionEn: "Determinant of 1×1 matrix equals its single element",
+      latex: `\\det(A) = ${fmt(A[0][0])}`,
+      value: A[0][0],
+    });
+    return { scalar: A[0][0], steps };
+  }
+
+  if (n === 2) {
+    const d = A[0][0] * A[1][1] - A[0][1] * A[1][0];
+    steps.push({
+      descriptionZh: "2×2 行列式公式：det(A) = ad − bc",
+      descriptionEn: "2×2 determinant formula: det(A) = ad − bc",
+      latex: `\\det\\begin{bmatrix} a & b \\\\ c & d \\end{bmatrix} = ad - bc`,
+    });
+    steps.push({
+      descriptionZh: "代入數值：",
+      descriptionEn: "Substituting values:",
+      latex: `\\det(A) = (${fmt(A[0][0])})(${fmt(A[1][1])}) - (${fmt(A[0][1])})(${fmt(A[1][0])})`,
+    });
+    steps.push({
+      descriptionZh: `計算：${fmt(A[0][0]*A[1][1])} − ${fmt(A[0][1]*A[1][0])} = ${fmt(d)}`,
+      descriptionEn: `Compute: ${fmt(A[0][0]*A[1][1])} − ${fmt(A[0][1]*A[1][0])} = ${fmt(d)}`,
+      latex: `= ${fmt(A[0][0]*A[1][1])} - (${fmt(A[0][1]*A[1][0])}) = ${fmt(d)}`,
+      value: d,
+    });
+    return { scalar: d, steps };
+  }
+
+  // n >= 3: cofactor expansion along row 1
+  steps.push({
+    descriptionZh: "沿第一行進行餘因子展開（Laplace 展開）",
+    descriptionEn: "Cofactor expansion along row 1 (Laplace expansion)",
+    latex: `\\det(A) = \\sum_{j=1}^{${n}} (-1)^{1+j} a_{1j} M_{1j}`,
+  });
+
+  let totalDet = 0;
+  const summaryTerms: string[] = [];
+
+  for (let j = 0; j < n; j++) {
+    const sign = Math.pow(-1, j);
+    const minor = A.slice(1).map((row) => row.filter((_, k) => k !== j));
+    const minorDet = computeDetRaw(minor);
+    const cofactor = sign * minorDet;
+    const term = A[0][j] * cofactor;
+    totalDet += term;
+
+    steps.push({
+      descriptionZh: `j=${j+1}：元素 a₁${j+1}=${fmt(A[0][j])}，符號=(−1)^{1+${j+1}}=${sign>0?'+1':'-1'}，子式 M₁${j+1}`,
+      descriptionEn: `j=${j+1}: element a₁${j+1}=${fmt(A[0][j])}, sign=(−1)^{1+${j+1}}=${sign>0?'+1':'-1'}, minor M₁${j+1}`,
+      latex: `(-1)^{1+${j+1}} \\cdot ${fmt(A[0][j])} \\cdot \\det${matrixToLatex(minor)} = ${fmt(cofactor)} \\cdot ${fmt(A[0][j])} = ${fmt(term)}`,
+    });
+
+    const signStr = term >= 0 ? "+" : "";
+    summaryTerms.push(`${signStr}${fmt(term)}`);
+  }
+
+  steps.push({
+    descriptionZh: "將所有餘因子項相加：",
+    descriptionEn: "Sum all cofactor terms:",
+    latex: `\\det(A) = ${summaryTerms.join(" ")} = ${fmt(totalDet)}`,
+    value: totalDet,
+  });
+
+  return { scalar: totalDet, steps };
+}
+
+// ─── Inverse Matrix (Gauss-Jordan) ────────────────────────────────────────────
+
+export function matInverse(A: Matrix): MatrixResult {
+  const steps: StepResult[] = [];
+  const n = A.length;
+
+  if (n !== A[0].length) {
+    return { steps, error: "square_required" };
+  }
+
+  steps.push({
+    descriptionZh: `計算 ${n}×${n} 方陣的逆矩陣，使用高斯-喬登消去法`,
+    descriptionEn: `Computing inverse of ${n}×${n} matrix using Gauss-Jordan elimination`,
+    latex: `A = ${matrixToLatex(A)}`,
+  });
+
+  steps.push({
+    descriptionZh: "建立增廣矩陣 [A | I]，對其進行列變換，直到左側化為 I",
+    descriptionEn: "Form augmented matrix [A | I]; apply row operations until left side becomes I",
+    latex: `[A \\mid I] \\xrightarrow{\\text{row ops}} [I \\mid A^{-1}]`,
+  });
+
   const aug: number[][] = A.map((row, i) => [
-    ...row,
+    ...row.map((x) => x),
     ...Array.from({ length: n }, (_, j) => (i === j ? 1 : 0)),
   ]);
 
   steps.push({
-    description: `Augment [A | I] and apply Gauss-Jordan elimination`,
-    matrix: aug.map((row) => row.slice(0, n)),
-    latex: `[A \\mid I]`,
+    descriptionZh: "初始增廣矩陣：",
+    descriptionEn: "Initial augmented matrix:",
+    latex: augMatrixLatex(aug, n),
   });
 
   for (let col = 0; col < n; col++) {
     // Find pivot
     let pivotRow = -1;
     for (let row = col; row < n; row++) {
-      if (Math.abs(aug[row][col]) > 1e-10) {
-        pivotRow = row;
-        break;
-      }
+      if (Math.abs(aug[row][col]) > 1e-10) { pivotRow = row; break; }
     }
     if (pivotRow === -1) {
       return { steps, error: "singular" };
@@ -220,52 +455,58 @@ export function matInverse(A: Matrix): MatrixResult {
     if (pivotRow !== col) {
       [aug[col], aug[pivotRow]] = [aug[pivotRow], aug[col]];
       steps.push({
-        description: `Swap R${col + 1} ↔ R${pivotRow + 1}`,
-        matrix: aug.map((row) => row.slice(0, n)),
-        latex: `R_{${col + 1}} \\leftrightarrow R_{${pivotRow + 1}}`,
+        descriptionZh: `交換第 ${col+1} 行與第 ${pivotRow+1} 行，使主元非零`,
+        descriptionEn: `Swap row ${col+1} ↔ row ${pivotRow+1} to get non-zero pivot`,
+        latex: `R_{${col+1}} \\leftrightarrow R_{${pivotRow+1}} \\Rightarrow ${augMatrixLatex(aug, n)}`,
       });
     }
 
     // Scale pivot row
     const pivot = aug[col][col];
     if (Math.abs(pivot - 1) > 1e-10) {
-      for (let j = 0; j < 2 * n; j++) {
-        aug[col][j] /= pivot;
-      }
+      for (let j = 0; j < 2 * n; j++) aug[col][j] /= pivot;
       steps.push({
-        description: `R${col + 1} ← R${col + 1} / ${fmt(pivot)}`,
-        matrix: aug.map((row) => row.slice(0, n)),
-        latex: `R_{${col + 1}} \\leftarrow \\frac{1}{${fmt(pivot)}} R_{${col + 1}}`,
+        descriptionZh: `將第 ${col+1} 行除以主元 ${fmt(pivot)}，令主元 = 1`,
+        descriptionEn: `Divide row ${col+1} by pivot ${fmt(pivot)} so pivot = 1`,
+        latex: `R_{${col+1}} \\leftarrow \\frac{1}{${fmt(pivot)}} R_{${col+1}} \\Rightarrow ${augMatrixLatex(aug, n)}`,
       });
     }
 
-    // Eliminate column
+    // Eliminate column entries
     for (let row = 0; row < n; row++) {
-      if (row !== col && Math.abs(aug[row][col]) > 1e-10) {
-        const factor = aug[row][col];
-        for (let j = 0; j < 2 * n; j++) {
-          aug[row][j] -= factor * aug[col][j];
-        }
-        steps.push({
-          description: `R${row + 1} ← R${row + 1} − (${fmt(factor)}) × R${col + 1}`,
-          matrix: aug.map((r) => r.slice(0, n)),
-          latex: `R_{${row + 1}} \\leftarrow R_{${row + 1}} - ${fmt(factor)} R_{${col + 1}}`,
-        });
-      }
+      if (row === col) continue;
+      const factor = aug[row][col];
+      if (Math.abs(factor) < 1e-10) continue;
+      for (let j = 0; j < 2 * n; j++) aug[row][j] -= factor * aug[col][j];
+      const sign = factor > 0 ? "-" : "+";
+      steps.push({
+        descriptionZh: `消去第 ${row+1} 行第 ${col+1} 列的元素（值 = ${fmt(factor)}）`,
+        descriptionEn: `Eliminate element in row ${row+1}, col ${col+1} (value = ${fmt(factor)})`,
+        latex: `R_{${row+1}} \\leftarrow R_{${row+1}} ${sign} ${fmt(Math.abs(factor))} R_{${col+1}} \\Rightarrow ${augMatrixLatex(aug, n)}`,
+      });
     }
   }
 
   const result = aug.map((row) => row.slice(n).map((v) => parseFloat(v.toFixed(10))));
-  steps.push({
-    description: `Result: A⁻¹`,
-    matrix: result,
-    latex: `A^{-1}`,
-  });
-  return { result, steps };
-}
 
-/** Format matrix as LaTeX */
-export function matrixToLatex(M: Matrix, bracket: "b" | "p" | "v" = "b"): string {
-  const rows = M.map((row) => row.map((v) => fmt(v)).join(" & ")).join(" \\\\ ");
-  return `\\begin{${bracket}matrix} ${rows} \\end{${bracket}matrix}`;
+  steps.push({
+    descriptionZh: "左側已化為單位矩陣，右側即為 A⁻¹",
+    descriptionEn: "Left side is now identity; right side is A⁻¹",
+    latex: `[I \\mid A^{-1}] = ${augMatrixLatex(aug, n)}`,
+  });
+
+  steps.push({
+    descriptionZh: "最終結果：逆矩陣 A⁻¹",
+    descriptionEn: "Final result: inverse matrix A⁻¹",
+    latex: `A^{-1} = ${matrixToLatex(result)}`,
+    matrix: result,
+  });
+
+  steps.push({
+    descriptionZh: "驗證：A × A⁻¹ = I（單位矩陣）",
+    descriptionEn: "Verification: A × A⁻¹ = I (identity matrix)",
+    latex: `A \\cdot A^{-1} = I_{${n}}`,
+  });
+
+  return { result, steps };
 }

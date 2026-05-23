@@ -10,6 +10,8 @@ type Translations = {
   navMatrix: string;
   navLinearSystem: string;
   navVector: string;
+  navKnowledge: string;
+  navDocuments: string;
   // Matrix module
   matrixCalc: string;
   matrixA: string;
@@ -82,6 +84,8 @@ const zh: Translations = {
   navMatrix: "矩陣計算",
   navLinearSystem: "聯立方程",
   navVector: "向量",
+  navKnowledge: "知識點庫",
+  navDocuments: "教學資源",
   matrixCalc: "矩陣計算",
   matrixA: "矩陣 A",
   matrixB: "矩陣 B",
@@ -148,6 +152,8 @@ const en: Translations = {
   navMatrix: "Matrix Calculator",
   navLinearSystem: "Linear Systems",
   navVector: "Vectors",
+  navKnowledge: "Knowledge Base",
+  navDocuments: "Teaching Resources",
   matrixCalc: "Matrix Calculator",
   matrixA: "Matrix A",
   matrixB: "Matrix B",

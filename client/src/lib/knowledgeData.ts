@@ -1,0 +1,253 @@
+// knowledgeData.ts — Static bilingual knowledge base content
+// Each item has: titleZh, titleEn, formula (LaTeX), descriptionZh, descriptionEn, exampleZh, exampleEn
+
+export interface KnowledgeItemData {
+  id: string;
+  titleZh: string;
+  titleEn: string;
+  formula?: string;
+  descriptionZh: string;
+  descriptionEn: string;
+  exampleZh?: string;
+  exampleEn?: string;
+  tags?: string[];
+}
+
+export interface KnowledgeTopicData {
+  slug: string;
+  titleZh: string;
+  titleEn: string;
+  icon: string;
+  color: string;
+  items: KnowledgeItemData[];
+}
+
+export const knowledgeTopics: KnowledgeTopicData[] = [
+  {
+    slug: "matrix",
+    titleZh: "矩陣",
+    titleEn: "Matrix",
+    icon: "Grid",
+    color: "blue",
+    items: [
+      {
+        id: "matrix-def",
+        titleZh: "矩陣的定義",
+        titleEn: "Definition of a Matrix",
+        formula: `A = \\begin{bmatrix} a_{11} & a_{12} & \\cdots & a_{1n} \\\\ a_{21} & a_{22} & \\cdots & a_{2n} \\\\ \\vdots & \\vdots & \\ddots & \\vdots \\\\ a_{m1} & a_{m2} & \\cdots & a_{mn} \\end{bmatrix}`,
+        descriptionZh: "矩陣是由 m 行 n 列的數字排列成的矩形陣列，記作 m×n 矩陣。矩陣中第 i 行第 j 列的元素記作 aᵢⱼ。",
+        descriptionEn: "A matrix is a rectangular array of numbers arranged in m rows and n columns, denoted as an m×n matrix. The element in row i and column j is denoted aᵢⱼ.",
+        exampleZh: "3×2 矩陣：\\begin{bmatrix} 1 & 2 \\\\ 3 & 4 \\\\ 5 & 6 \\end{bmatrix}",
+        exampleEn: "A 3×2 matrix: \\begin{bmatrix} 1 & 2 \\\\ 3 & 4 \\\\ 5 & 6 \\end{bmatrix}",
+      },
+      {
+        id: "matrix-add",
+        titleZh: "矩陣加法",
+        titleEn: "Matrix Addition",
+        formula: `(A + B)_{ij} = a_{ij} + b_{ij}`,
+        descriptionZh: "兩個同維度矩陣相加，只需將對應位置的元素相加。矩陣加法滿足交換律和結合律：A+B = B+A，(A+B)+C = A+(B+C)。",
+        descriptionEn: "To add two matrices of the same dimensions, simply add the corresponding elements. Matrix addition is commutative and associative: A+B = B+A, (A+B)+C = A+(B+C).",
+        exampleZh: "\\begin{bmatrix}1&2\\\\3&4\\end{bmatrix} + \\begin{bmatrix}5&6\\\\7&8\\end{bmatrix} = \\begin{bmatrix}6&8\\\\10&12\\end{bmatrix}",
+        exampleEn: "\\begin{bmatrix}1&2\\\\3&4\\end{bmatrix} + \\begin{bmatrix}5&6\\\\7&8\\end{bmatrix} = \\begin{bmatrix}6&8\\\\10&12\\end{bmatrix}",
+      },
+      {
+        id: "matrix-mul",
+        titleZh: "矩陣乘法",
+        titleEn: "Matrix Multiplication",
+        formula: `(AB)_{ij} = \\sum_{k=1}^{n} a_{ik} b_{kj}`,
+        descriptionZh: "A（m×n）與 B（n×p）相乘，結果為 m×p 矩陣。Cᵢⱼ 等於 A 第 i 行與 B 第 j 列的點積。注意：矩陣乘法不滿足交換律（AB ≠ BA）。",
+        descriptionEn: "Multiplying A (m×n) by B (n×p) gives an m×p matrix. Cᵢⱼ equals the dot product of row i of A and column j of B. Note: matrix multiplication is NOT commutative (AB ≠ BA).",
+        exampleZh: "\\begin{bmatrix}1&2\\\\3&4\\end{bmatrix}\\begin{bmatrix}5&6\\\\7&8\\end{bmatrix} = \\begin{bmatrix}19&22\\\\43&50\\end{bmatrix}",
+        exampleEn: "\\begin{bmatrix}1&2\\\\3&4\\end{bmatrix}\\begin{bmatrix}5&6\\\\7&8\\end{bmatrix} = \\begin{bmatrix}19&22\\\\43&50\\end{bmatrix}",
+      },
+      {
+        id: "matrix-transpose",
+        titleZh: "轉置矩陣",
+        titleEn: "Transpose Matrix",
+        formula: `(A^T)_{ij} = A_{ji}`,
+        descriptionZh: "轉置矩陣是將原矩陣的行列互換。若 A 為 m×n，則 Aᵀ 為 n×m。性質：(AB)ᵀ = BᵀAᵀ，(Aᵀ)ᵀ = A。",
+        descriptionEn: "The transpose of a matrix swaps its rows and columns. If A is m×n, then Aᵀ is n×m. Properties: (AB)ᵀ = BᵀAᵀ, (Aᵀ)ᵀ = A.",
+        exampleZh: "\\begin{bmatrix}1&2&3\\\\4&5&6\\end{bmatrix}^T = \\begin{bmatrix}1&4\\\\2&5\\\\3&6\\end{bmatrix}",
+        exampleEn: "\\begin{bmatrix}1&2&3\\\\4&5&6\\end{bmatrix}^T = \\begin{bmatrix}1&4\\\\2&5\\\\3&6\\end{bmatrix}",
+      },
+      {
+        id: "matrix-det",
+        titleZh: "行列式",
+        titleEn: "Determinant",
+        formula: `\\det(A) = \\sum_{j=1}^{n} (-1)^{1+j} a_{1j} M_{1j}`,
+        descriptionZh: "行列式是方陣的一個純量值。2×2 矩陣：det = ad−bc。n×n 矩陣可用餘因子展開計算。若 det(A) = 0，則矩陣奇異（不可逆）。",
+        descriptionEn: "The determinant is a scalar value associated with a square matrix. For 2×2: det = ad−bc. For n×n, use cofactor expansion. If det(A) = 0, the matrix is singular (not invertible).",
+        exampleZh: "\\det\\begin{bmatrix}2&1\\\\5&3\\end{bmatrix} = 2\\times3 - 1\\times5 = 6-5 = 1",
+        exampleEn: "\\det\\begin{bmatrix}2&1\\\\5&3\\end{bmatrix} = 2\\times3 - 1\\times5 = 6-5 = 1",
+      },
+      {
+        id: "matrix-inverse",
+        titleZh: "逆矩陣",
+        titleEn: "Inverse Matrix",
+        formula: `A A^{-1} = A^{-1} A = I`,
+        descriptionZh: "若方陣 A 的行列式不為零，則 A 可逆。逆矩陣 A⁻¹ 滿足 AA⁻¹ = I。可用高斯-喬登消去法求逆矩陣：對 [A|I] 進行列變換，直到左側化為 I，右側即為 A⁻¹。",
+        descriptionEn: "If a square matrix A has a non-zero determinant, it is invertible. The inverse A⁻¹ satisfies AA⁻¹ = I. Use Gauss-Jordan elimination on [A|I]: apply row operations until the left side becomes I; the right side is then A⁻¹.",
+        exampleZh: "\\begin{bmatrix}2&1\\\\5&3\\end{bmatrix}^{-1} = \\begin{bmatrix}3&-1\\\\-5&2\\end{bmatrix}",
+        exampleEn: "\\begin{bmatrix}2&1\\\\5&3\\end{bmatrix}^{-1} = \\begin{bmatrix}3&-1\\\\-5&2\\end{bmatrix}",
+      },
+      {
+        id: "matrix-identity",
+        titleZh: "單位矩陣",
+        titleEn: "Identity Matrix",
+        formula: `I_n = \\begin{bmatrix} 1 & 0 & \\cdots & 0 \\\\ 0 & 1 & \\cdots & 0 \\\\ \\vdots & & \\ddots & \\vdots \\\\ 0 & 0 & \\cdots & 1 \\end{bmatrix}`,
+        descriptionZh: "單位矩陣是對角線元素全為 1、其餘元素全為 0 的方陣。性質：AI = IA = A（對任意矩陣 A）。",
+        descriptionEn: "The identity matrix has 1s on the diagonal and 0s elsewhere. Property: AI = IA = A (for any compatible matrix A).",
+        exampleZh: "I_2 = \\begin{bmatrix}1&0\\\\0&1\\end{bmatrix},\\quad I_3 = \\begin{bmatrix}1&0&0\\\\0&1&0\\\\0&0&1\\end{bmatrix}",
+        exampleEn: "I_2 = \\begin{bmatrix}1&0\\\\0&1\\end{bmatrix},\\quad I_3 = \\begin{bmatrix}1&0&0\\\\0&1&0\\\\0&0&1\\end{bmatrix}",
+      },
+    ],
+  },
+  {
+    slug: "linear-system",
+    titleZh: "聯立方程",
+    titleEn: "Linear Systems",
+    icon: "Sigma",
+    color: "green",
+    items: [
+      {
+        id: "ls-def",
+        titleZh: "線性方程組的矩陣表示",
+        titleEn: "Matrix Form of Linear Systems",
+        formula: `A\\mathbf{x} = \\mathbf{b}`,
+        descriptionZh: "n 個方程 m 個未知數的線性方程組可以寫成矩陣形式 Ax = b，其中 A 是係數矩陣，x 是未知數向量，b 是常數向量。",
+        descriptionEn: "A system of n equations with m unknowns can be written in matrix form Ax = b, where A is the coefficient matrix, x is the unknown vector, and b is the constant vector.",
+        exampleZh: "\\begin{cases}2x+y=5\\\\x+3y=10\\end{cases} \\Rightarrow \\begin{bmatrix}2&1\\\\1&3\\end{bmatrix}\\begin{bmatrix}x\\\\y\\end{bmatrix}=\\begin{bmatrix}5\\\\10\\end{bmatrix}",
+        exampleEn: "\\begin{cases}2x+y=5\\\\x+3y=10\\end{cases} \\Rightarrow \\begin{bmatrix}2&1\\\\1&3\\end{bmatrix}\\begin{bmatrix}x\\\\y\\end{bmatrix}=\\begin{bmatrix}5\\\\10\\end{bmatrix}",
+      },
+      {
+        id: "ls-augmented",
+        titleZh: "增廣矩陣",
+        titleEn: "Augmented Matrix",
+        formula: `[A \\mid \\mathbf{b}] = \\left[\\begin{array}{ccc|c} a_{11} & \\cdots & a_{1n} & b_1 \\\\ \\vdots & & \\vdots & \\vdots \\\\ a_{m1} & \\cdots & a_{mn} & b_m \\end{array}\\right]`,
+        descriptionZh: "增廣矩陣是將係數矩陣 A 和常數向量 b 合併成的矩陣 [A|b]。高斯消去法直接對增廣矩陣進行列變換。",
+        descriptionEn: "The augmented matrix [A|b] combines the coefficient matrix A and the constant vector b. Gaussian elimination applies row operations directly to the augmented matrix.",
+        exampleZh: "\\left[\\begin{array}{cc|c}2&1&5\\\\1&3&10\\end{array}\\right]",
+        exampleEn: "\\left[\\begin{array}{cc|c}2&1&5\\\\1&3&10\\end{array}\\right]",
+      },
+      {
+        id: "ls-row-ops",
+        titleZh: "初等列變換",
+        titleEn: "Elementary Row Operations",
+        formula: `R_i \\leftrightarrow R_j,\\quad cR_i,\\quad R_i + cR_j`,
+        descriptionZh: "三種初等列變換：(1) 交換兩行；(2) 某行乘以非零常數；(3) 某行加上另一行的倍數。這些變換不改變方程組的解集。",
+        descriptionEn: "Three elementary row operations: (1) swap two rows; (2) multiply a row by a non-zero constant; (3) add a multiple of one row to another. These operations do not change the solution set.",
+        exampleZh: "R_1 \\leftrightarrow R_2,\\quad 3R_2,\\quad R_3 \\leftarrow R_3 - 2R_1",
+        exampleEn: "R_1 \\leftrightarrow R_2,\\quad 3R_2,\\quad R_3 \\leftarrow R_3 - 2R_1",
+      },
+      {
+        id: "ls-gaussian",
+        titleZh: "高斯消去法",
+        titleEn: "Gaussian Elimination",
+        formula: `[A\\mid b] \\xrightarrow{\\text{row ops}} [U\\mid c]`,
+        descriptionZh: "高斯消去法將增廣矩陣化為行階梯形式（REF）。步驟：(1) 選取主元；(2) 消去主元下方的元素；(3) 重複直到 REF。再進行回代求解。",
+        descriptionEn: "Gaussian elimination reduces the augmented matrix to Row Echelon Form (REF). Steps: (1) select pivot; (2) eliminate entries below pivot; (3) repeat until REF. Then perform back substitution.",
+        exampleZh: "\\left[\\begin{array}{cc|c}2&1&5\\\\1&3&10\\end{array}\\right] \\to \\left[\\begin{array}{cc|c}2&1&5\\\\0&\\frac{5}{2}&\\frac{15}{2}\\end{array}\\right]",
+        exampleEn: "\\left[\\begin{array}{cc|c}2&1&5\\\\1&3&10\\end{array}\\right] \\to \\left[\\begin{array}{cc|c}2&1&5\\\\0&\\frac{5}{2}&\\frac{15}{2}\\end{array}\\right]",
+      },
+      {
+        id: "ls-solution-types",
+        titleZh: "解的類型",
+        titleEn: "Types of Solutions",
+        formula: `\\text{rank}(A) \\text{ vs } \\text{rank}([A|b]) \\text{ vs } n`,
+        descriptionZh: "線性方程組有三種情況：(1) 唯一解：rank(A) = rank([A|b]) = n；(2) 無限多解：rank(A) = rank([A|b]) < n；(3) 無解：rank(A) < rank([A|b])。",
+        descriptionEn: "A linear system has three cases: (1) Unique solution: rank(A) = rank([A|b]) = n; (2) Infinitely many solutions: rank(A) = rank([A|b]) < n; (3) No solution: rank(A) < rank([A|b]).",
+        exampleZh: "唯一解：x=1, y=3；無限多解：x=t, y=2-t；無解：矛盾行 0=1",
+        exampleEn: "Unique: x=1, y=3; Infinite: x=t, y=2-t; None: contradiction row 0=1",
+      },
+      {
+        id: "ls-cramer",
+        titleZh: "克拉默法則",
+        titleEn: "Cramer's Rule",
+        formula: `x_i = \\frac{\\det(A_i)}{\\det(A)}`,
+        descriptionZh: "克拉默法則用行列式求解 n×n 線性方程組（det(A) ≠ 0）。Aᵢ 是將 A 的第 i 列替換為 b 所得的矩陣。適合小型方程組的手算。",
+        descriptionEn: "Cramer's rule solves an n×n system (det(A) ≠ 0) using determinants. Aᵢ is the matrix formed by replacing column i of A with b. Suitable for hand-solving small systems.",
+        exampleZh: "Ax=b，det(A)=5，det(A₁)=5，det(A₂)=15 \\Rightarrow x_1=1, x_2=3",
+        exampleEn: "Ax=b, det(A)=5, det(A₁)=5, det(A₂)=15 \\Rightarrow x_1=1, x_2=3",
+      },
+    ],
+  },
+  {
+    slug: "vector",
+    titleZh: "向量",
+    titleEn: "Vectors",
+    icon: "ArrowRight",
+    color: "purple",
+    items: [
+      {
+        id: "vec-def",
+        titleZh: "向量的定義",
+        titleEn: "Definition of a Vector",
+        formula: `\\mathbf{v} = \\begin{pmatrix} v_1 \\\\ v_2 \\\\ \\vdots \\\\ v_n \\end{pmatrix}`,
+        descriptionZh: "向量是具有大小和方向的量。n 維向量是 n 個實數的有序組合。2D 向量 (x, y) 表示平面上的方向和距離；3D 向量 (x, y, z) 表示空間中的方向和距離。",
+        descriptionEn: "A vector is a quantity with both magnitude and direction. An n-dimensional vector is an ordered tuple of n real numbers. A 2D vector (x, y) represents direction and distance in the plane; a 3D vector (x, y, z) in space.",
+        exampleZh: "\\mathbf{v} = \\begin{pmatrix}3\\\\4\\end{pmatrix}，|\\mathbf{v}| = \\sqrt{9+16} = 5",
+        exampleEn: "\\mathbf{v} = \\begin{pmatrix}3\\\\4\\end{pmatrix},\\quad |\\mathbf{v}| = \\sqrt{9+16} = 5",
+      },
+      {
+        id: "vec-add",
+        titleZh: "向量加法與減法",
+        titleEn: "Vector Addition and Subtraction",
+        formula: `\\mathbf{a} \\pm \\mathbf{b} = \\begin{pmatrix} a_1 \\pm b_1 \\\\ a_2 \\pm b_2 \\\\ \\vdots \\end{pmatrix}`,
+        descriptionZh: "向量加減法：對應分量相加或相減。幾何意義：加法遵循平行四邊形法則（首尾相接）；減法 a−b 等於從 b 的終點指向 a 的終點的向量。",
+        descriptionEn: "Add or subtract corresponding components. Geometrically: addition follows the parallelogram rule (tip-to-tail); subtraction a−b is the vector from the tip of b to the tip of a.",
+        exampleZh: "\\begin{pmatrix}3\\\\1\\end{pmatrix}+\\begin{pmatrix}1\\\\4\\end{pmatrix}=\\begin{pmatrix}4\\\\5\\end{pmatrix}",
+        exampleEn: "\\begin{pmatrix}3\\\\1\\end{pmatrix}+\\begin{pmatrix}1\\\\4\\end{pmatrix}=\\begin{pmatrix}4\\\\5\\end{pmatrix}",
+      },
+      {
+        id: "vec-magnitude",
+        titleZh: "向量的模（長度）",
+        titleEn: "Vector Magnitude (Length)",
+        formula: `|\\mathbf{v}| = \\sqrt{v_1^2 + v_2^2 + \\cdots + v_n^2}`,
+        descriptionZh: "向量的模是其各分量平方和的平方根，即向量的幾何長度。2D：|v| = √(x²+y²)；3D：|v| = √(x²+y²+z²)。",
+        descriptionEn: "The magnitude of a vector is the square root of the sum of squares of its components — its geometric length. 2D: |v| = √(x²+y²); 3D: |v| = √(x²+y²+z²).",
+        exampleZh: "|\\begin{pmatrix}3\\\\4\\end{pmatrix}| = \\sqrt{3^2+4^2} = \\sqrt{25} = 5",
+        exampleEn: "|\\begin{pmatrix}3\\\\4\\end{pmatrix}| = \\sqrt{3^2+4^2} = \\sqrt{25} = 5",
+      },
+      {
+        id: "vec-dot",
+        titleZh: "點積（內積）",
+        titleEn: "Dot Product (Inner Product)",
+        formula: `\\mathbf{a} \\cdot \\mathbf{b} = \\sum_i a_i b_i = |\\mathbf{a}||\\mathbf{b}|\\cos\\theta`,
+        descriptionZh: "點積是對應分量乘積之和，結果為純量。幾何意義：a·b = |a||b|cosθ，其中 θ 為兩向量夾角。若 a·b = 0，則兩向量垂直（正交）。",
+        descriptionEn: "The dot product is the sum of products of corresponding components, yielding a scalar. Geometrically: a·b = |a||b|cosθ, where θ is the angle between them. If a·b = 0, the vectors are perpendicular (orthogonal).",
+        exampleZh: "\\begin{pmatrix}1\\\\2\\\\3\\end{pmatrix}\\cdot\\begin{pmatrix}4\\\\5\\\\6\\end{pmatrix} = 4+10+18 = 32",
+        exampleEn: "\\begin{pmatrix}1\\\\2\\\\3\\end{pmatrix}\\cdot\\begin{pmatrix}4\\\\5\\\\6\\end{pmatrix} = 4+10+18 = 32",
+      },
+      {
+        id: "vec-cross",
+        titleZh: "叉積（外積）",
+        titleEn: "Cross Product (Outer Product)",
+        formula: `\\mathbf{a} \\times \\mathbf{b} = \\begin{vmatrix} \\mathbf{i} & \\mathbf{j} & \\mathbf{k} \\\\ a_x & a_y & a_z \\\\ b_x & b_y & b_z \\end{vmatrix}`,
+        descriptionZh: "叉積僅適用於 3D 向量，結果為向量。叉積向量垂直於 a 和 b 所在的平面，方向由右手定則確定。模：|a×b| = |a||b|sinθ，等於以 a、b 為邊的平行四邊形面積。",
+        descriptionEn: "The cross product applies only to 3D vectors and yields a vector. The result is perpendicular to the plane of a and b, with direction given by the right-hand rule. Magnitude: |a×b| = |a||b|sinθ = area of parallelogram spanned by a and b.",
+        exampleZh: "\\begin{pmatrix}1\\\\0\\\\0\\end{pmatrix}\\times\\begin{pmatrix}0\\\\1\\\\0\\end{pmatrix}=\\begin{pmatrix}0\\\\0\\\\1\\end{pmatrix}",
+        exampleEn: "\\begin{pmatrix}1\\\\0\\\\0\\end{pmatrix}\\times\\begin{pmatrix}0\\\\1\\\\0\\end{pmatrix}=\\begin{pmatrix}0\\\\0\\\\1\\end{pmatrix}",
+      },
+      {
+        id: "vec-unit",
+        titleZh: "單位向量",
+        titleEn: "Unit Vector",
+        formula: `\\hat{\\mathbf{v}} = \\frac{\\mathbf{v}}{|\\mathbf{v}|}`,
+        descriptionZh: "單位向量是模為 1 的向量，表示純方向。將任意非零向量除以其模即可得到同方向的單位向量。常用單位向量：î = (1,0,0)，ĵ = (0,1,0)，k̂ = (0,0,1)。",
+        descriptionEn: "A unit vector has magnitude 1 and represents pure direction. Divide any non-zero vector by its magnitude to get a unit vector in the same direction. Standard unit vectors: î = (1,0,0), ĵ = (0,1,0), k̂ = (0,0,1).",
+        exampleZh: "\\hat{\\mathbf{v}} = \\frac{1}{5}\\begin{pmatrix}3\\\\4\\end{pmatrix} = \\begin{pmatrix}0.6\\\\0.8\\end{pmatrix}",
+        exampleEn: "\\hat{\\mathbf{v}} = \\frac{1}{5}\\begin{pmatrix}3\\\\4\\end{pmatrix} = \\begin{pmatrix}0.6\\\\0.8\\end{pmatrix}",
+      },
+      {
+        id: "vec-angle",
+        titleZh: "向量夾角",
+        titleEn: "Angle Between Vectors",
+        formula: `\\theta = \\arccos\\left(\\frac{\\mathbf{a}\\cdot\\mathbf{b}}{|\\mathbf{a}||\\mathbf{b}|}\\right)`,
+        descriptionZh: "兩向量夾角 θ 由點積公式求得。θ = 0° 時同向；θ = 90° 時垂直；θ = 180° 時反向。",
+        descriptionEn: "The angle θ between two vectors is found using the dot product formula. θ = 0° means parallel (same direction); θ = 90° means perpendicular; θ = 180° means anti-parallel.",
+        exampleZh: "\\mathbf{a}=(1,0),\\mathbf{b}=(1,1)：\\cos\\theta=\\frac{1}{\\sqrt{2}}，\\theta=45°",
+        exampleEn: "\\mathbf{a}=(1,0),\\mathbf{b}=(1,1): \\cos\\theta=\\frac{1}{\\sqrt{2}},\\theta=45°",
+      },
+    ],
+  },
+];
