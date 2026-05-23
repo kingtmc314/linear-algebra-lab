@@ -403,6 +403,31 @@ export function matScalar(A: Matrix, k: number): MatrixResult {
 
 // ─── Determinant ──────────────────────────────────────────────────────────────
 
+/** Exact rational determinant via cofactor expansion */
+function computeDetRational(M: RatMatrix): Rational {
+  const sz = M.length;
+  if (sz === 1) return M[0][0];
+  if (sz === 2) return ratSub(ratMul(M[0][0], M[1][1]), ratMul(M[0][1], M[1][0]));
+  let acc: Rational = rat(0n);
+  for (let j = 0; j < sz; j++) {
+    const minor: RatMatrix = M.slice(1).map((row) => row.filter((_, k) => k !== j));
+    const minorDet = computeDetRational(minor);
+    const sign: Rational = j % 2 === 0 ? rat(1n) : rat(-1n);
+    const term = ratMul(ratMul(sign, M[0][j]), minorDet);
+    // add term to acc using rational addition
+    const num = acc.n * term.d + term.n * acc.d;
+    const den = acc.d * term.d;
+    const g = num === 0n ? 1n : (num < 0n ? gcdBig(-num, den) : gcdBig(num, den));
+    acc = { n: num / g, d: den / g };
+  }
+  return acc;
+}
+
+function gcdBig(a: bigint, b: bigint): bigint {
+  while (b) { const t = b; b = a % b; a = t; }
+  return a || 1n;
+}
+
 function computeDetRaw(M: Matrix): number {
   const n = M.length;
   if (n === 1) return M[0][0];
@@ -429,18 +454,26 @@ export function matDeterminant(A: Matrix): MatrixResult {
     latex: `A = ${matrixToLatex(A)}`,
   });
 
+  // Convert to rational matrix for exact computation
+  const ratA: RatMatrix = A.map(row => row.map(v => fromFloat(v)));
+
   if (n === 1) {
+    const detRat = ratA[0][0];
+    const detNum = ratToNumber(detRat);
     steps.push({
       descriptionZh: "1×1 矩陣的行列式等於其唯一元素",
       descriptionEn: "Determinant of 1×1 matrix equals its single element",
-      latex: `\\det(A) = ${fmt(A[0][0])}`,
-      value: A[0][0],
+      latex: `\\det(A) = ${ratToLatex(detRat)}`,
+      value: detNum,
     });
-    return { scalar: A[0][0], steps };
+    return { scalar: detNum, steps };
   }
 
   if (n === 2) {
-    const d = A[0][0] * A[1][1] - A[0][1] * A[1][0];
+    const a = ratA[0][0], b = ratA[0][1], c = ratA[1][0], d = ratA[1][1];
+    const ad = ratMul(a, d), bc = ratMul(b, c);
+    const detRat = ratSub(ad, bc);
+    const detNum = ratToNumber(detRat);
     steps.push({
       descriptionZh: "2×2 行列式公式：det(A) = ad − bc",
       descriptionEn: "2×2 determinant formula: det(A) = ad − bc",
@@ -449,53 +482,61 @@ export function matDeterminant(A: Matrix): MatrixResult {
     steps.push({
       descriptionZh: "代入數值：",
       descriptionEn: "Substituting values:",
-      latex: `\\det(A) = (${fmt(A[0][0])})(${fmt(A[1][1])}) - (${fmt(A[0][1])})(${fmt(A[1][0])})`,
+      latex: `\\det(A) = (${ratToLatex(a)})(${ratToLatex(d)}) - (${ratToLatex(b)})(${ratToLatex(c)})`,
     });
     steps.push({
-      descriptionZh: `計算：${fmt(A[0][0]*A[1][1])} − ${fmt(A[0][1]*A[1][0])} = ${fmt(d)}`,
-      descriptionEn: `Compute: ${fmt(A[0][0]*A[1][1])} − ${fmt(A[0][1]*A[1][0])} = ${fmt(d)}`,
-      latex: `= ${fmt(A[0][0]*A[1][1])} - (${fmt(A[0][1]*A[1][0])}) = ${fmt(d)}`,
-      value: d,
+      descriptionZh: `計算：${ratToLatex(ad)} − ${ratToLatex(bc)} = ${ratToLatex(detRat)}`,
+      descriptionEn: `Compute: ${ratToLatex(ad)} − ${ratToLatex(bc)} = ${ratToLatex(detRat)}`,
+      latex: `= ${ratToLatex(ad)} - (${ratToLatex(bc)}) = ${ratToLatex(detRat)}`,
+      value: detNum,
     });
-    return { scalar: d, steps };
+    return { scalar: detNum, steps };
   }
 
-  // n >= 3: cofactor expansion along row 1
+  // n >= 3: cofactor expansion along row 1 using exact rational arithmetic
   steps.push({
     descriptionZh: "沿第一行進行餘因子展開（Laplace 展開）",
     descriptionEn: "Cofactor expansion along row 1 (Laplace expansion)",
     latex: `\\det(A) = \\sum_{j=1}^{${n}} (-1)^{1+j} a_{1j} M_{1j}`,
   });
 
-  let totalDet = 0;
+  let totalDetRat: Rational = rat(0n);
   const summaryTerms: string[] = [];
 
   for (let j = 0; j < n; j++) {
-    const sign = Math.pow(-1, j);
-    const minor = A.slice(1).map((row) => row.filter((_, k) => k !== j));
-    const minorDet = computeDetRaw(minor);
-    const cofactor = sign * minorDet;
-    const term = A[0][j] * cofactor;
-    totalDet += term;
+    const sign: Rational = j % 2 === 0 ? rat(1n) : rat(-1n);
+    const minor: RatMatrix = ratA.slice(1).map((row) => row.filter((_, k) => k !== j));
+    const minorDetRat = computeDetRational(minor);
+    const cofactorRat = ratMul(sign, minorDetRat);
+    const termRat = ratMul(ratA[0][j], cofactorRat);
+    // add term to total
+    const num = totalDetRat.n * termRat.d + termRat.n * totalDetRat.d;
+    const den = totalDetRat.d * termRat.d;
+    const g = num === 0n ? 1n : (num < 0n ? gcdBig(-num, den) : gcdBig(num, den));
+    totalDetRat = { n: num / g, d: den / g };
 
+    const minorNumMatrix: Matrix = minor.map(row => row.map(v => ratToNumber(v)));
+    const signStr = j % 2 === 0 ? "+1" : "-1";
     steps.push({
-      descriptionZh: `j=${j+1}：元素 a₁${j+1}=${fmt(A[0][j])}，符號=(−1)^{1+${j+1}}=${sign>0?'+1':'-1'}，子式 M₁${j+1}`,
-      descriptionEn: `j=${j+1}: element a₁${j+1}=${fmt(A[0][j])}, sign=(−1)^{1+${j+1}}=${sign>0?'+1':'-1'}, minor M₁${j+1}`,
-      latex: `(-1)^{1+${j+1}} \\cdot ${fmt(A[0][j])} \\cdot \\det${matrixToLatex(minor)} = ${fmt(cofactor)} \\cdot ${fmt(A[0][j])} = ${fmt(term)}`,
+      descriptionZh: `j=${j+1}：元素 a₁${j+1}=${ratToLatex(ratA[0][j])}，符號=(−1)^{1+${j+1}}=${signStr}，子式 M₁${j+1}`,
+      descriptionEn: `j=${j+1}: element a₁${j+1}=${ratToLatex(ratA[0][j])}, sign=(−1)^{1+${j+1}}=${signStr}, minor M₁${j+1}`,
+      latex: `(-1)^{1+${j+1}} \\cdot ${ratToLatex(ratA[0][j])} \\cdot \\det${matrixToLatex(minorNumMatrix)} = ${ratToLatex(cofactorRat)} \\cdot ${ratToLatex(ratA[0][j])} = ${ratToLatex(termRat)}`,
     });
 
-    const signStr = term >= 0 ? "+" : "";
-    summaryTerms.push(`${signStr}${fmt(term)}`);
+    const termNum = ratToNumber(termRat);
+    const termSignStr = termNum >= 0 ? "+" : "";
+    summaryTerms.push(`${termSignStr}${ratToLatex(termRat)}`);
   }
 
+  const totalDetNum = ratToNumber(totalDetRat);
   steps.push({
     descriptionZh: "將所有餘因子項相加：",
     descriptionEn: "Sum all cofactor terms:",
-    latex: `\\det(A) = ${summaryTerms.join(" ")} = ${fmt(totalDet)}`,
-    value: totalDet,
+    latex: `\\det(A) = ${summaryTerms.join(" ")} = ${ratToLatex(totalDetRat)}`,
+    value: totalDetNum,
   });
 
-  return { scalar: totalDet, steps };
+  return { scalar: totalDetNum, steps };
 }
 
 // ─── Inverse Matrix (Gauss-Jordan) ────────────────────────────────────────────

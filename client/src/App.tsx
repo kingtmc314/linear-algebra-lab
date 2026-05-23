@@ -4,10 +4,11 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch, useLocation } from "wouter";
+import { Route, Switch, useLocation, Router } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { LanguageProvider, useLanguage } from "./contexts/LanguageContext";
+import HomePage from "./pages/HomePage";
 import MatrixPage from "./pages/MatrixPage";
 import LinearSystemPage from "./pages/LinearSystemPage";
 import VectorPage from "./pages/VectorPage";
@@ -15,14 +16,15 @@ import KnowledgePage from "./pages/KnowledgePage";
 import EigenPage from "./pages/EigenPage";
 import MatrixPowerPage from "./pages/MatrixPowerPage";
 import { useState } from "react";
-import { Grid3X3, Sigma, ArrowRight, Menu, X, Globe, BookOpen, Sparkles, Zap } from "lucide-react";
+import { Grid3X3, Sigma, ArrowRight, Menu, X, Globe, BookOpen, Sparkles, Zap, Home } from "lucide-react";
 
 function Sidebar({ mobile, onClose }: { mobile?: boolean; onClose?: () => void }) {
   const [location, navigate] = useLocation();
   const { t, lang, setLang } = useLanguage();
 
   const navItems = [
-    { path: "/", label: t.navMatrix, icon: Grid3X3 },
+    { path: "/", label: lang === "zh" ? "首頁" : "Home", icon: Home },
+    { path: "/matrix", label: t.navMatrix, icon: Grid3X3 },
     { path: "/system", label: t.navLinearSystem, icon: Sigma },
     { path: "/vector", label: t.navVector, icon: ArrowRight },
     { path: "/eigen", label: t.navEigen, icon: Sparkles },
@@ -142,7 +144,8 @@ function Layout() {
   const [location] = useLocation();
 
   const pageTitle: Record<string, string> = {
-    "/": t.navMatrix,
+    "/": lang === "zh" ? "首頁" : "Home",
+    "/matrix": t.navMatrix,
     "/system": t.navLinearSystem,
     "/vector": t.navVector,
     "/eigen": t.navEigen,
@@ -202,7 +205,8 @@ function Layout() {
         {/* Page content */}
         <main className="flex-1 overflow-y-auto">
           <Switch>
-            <Route path="/" component={MatrixPage} />
+            <Route path="/" component={HomePage} />
+            <Route path="/matrix" component={MatrixPage} />
             <Route path="/system" component={LinearSystemPage} />
             <Route path="/vector" component={VectorPage} />
             <Route path="/knowledge">
@@ -226,7 +230,9 @@ function App() {
         <LanguageProvider>
           <TooltipProvider>
             <Toaster />
-            <Layout />
+            <Router base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+              <Layout />
+            </Router>
           </TooltipProvider>
         </LanguageProvider>
       </ThemeProvider>
