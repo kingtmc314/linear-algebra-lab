@@ -3,6 +3,22 @@
 // Each operation returns steps showing HOW each result is obtained
 // ============================================================
 
+import {
+  type Rational,
+  type RatMatrix,
+  rat,
+  fromFloat,
+  div as ratDiv,
+  sub as ratSub,
+  mul as ratMul,
+  neg as ratNeg,
+  isZero as ratIsZero,
+  toNumber as ratToNumber,
+  ratToLatex,
+  ratToStr,
+  ratMatLatex,
+} from "./rational";
+
 export type Matrix = number[][];
 
 export interface StepResult {
@@ -487,18 +503,15 @@ export function matDeterminant(A: Matrix): MatrixResult {
 export function matInverse(A: Matrix): MatrixResult {
   const steps: StepResult[] = [];
   const n = A.length;
-
   if (n !== A[0].length) {
     return { steps, error: "square_required" };
   }
-
   // ── Step 0: Check determinant first (singular matrix guard) ──────────────
   steps.push({
     descriptionZh: `計算 ${n}×${n} 方陣的逆矩陣，首先計算行列式以判斷矩陣是否可逆`,
     descriptionEn: `Computing inverse of ${n}×${n} matrix — first check determinant to verify invertibility`,
     latex: `A = ${matrixToLatex(A)}`,
   });
-
   const det = computeDetRaw(A);
   if (n === 2) {
     steps.push({
@@ -513,7 +526,6 @@ export function matInverse(A: Matrix): MatrixResult {
       latex: `\\det(A) = ${fmt(det)}`,
     });
   }
-
   if (Math.abs(det) < 1e-10) {
     steps.push({
       descriptionZh: `det(A) = ${fmt(det)} = 0，矩陣為奇異矩陣（Singular Matrix）`,
@@ -522,96 +534,115 @@ export function matInverse(A: Matrix): MatrixResult {
     });
     return { steps, error: "singular" };
   }
-
   steps.push({
     descriptionZh: `det(A) = ${fmt(det)} ≠ 0，矩陣可逆，繼續使用高斯-喬登消去法求逆矩陣`,
     descriptionEn: `det(A) = ${fmt(det)} ≠ 0 — matrix is invertible; proceed with Gauss-Jordan elimination`,
     latex: `\\det(A) = ${fmt(det)} \\neq 0 \\Rightarrow A^{-1} \\text{ exists}`,
   });
-
   steps.push({
     descriptionZh: "建立增廣矩陣 [A | I]，對其進行列變換，直到左側化為 I",
     descriptionEn: "Form augmented matrix [A | I]; apply row operations until left side becomes I",
     latex: `[A \\mid I] \\xrightarrow{\\text{row ops}} [I \\mid A^{-1}]`,
   });
 
-  const aug: number[][] = A.map((row, i) => [
-    ...row.map((x) => x),
-    ...Array.from({ length: n }, (_, j) => (i === j ? 1 : 0)),
+  // ── Use exact rational arithmetic for all row operations ─────────────────
+  // Build rational augmented matrix [A | I]
+  const ratAug: RatMatrix = A.map((row, i) => [
+    ...row.map((v) => fromFloat(v)),
+    ...Array.from({ length: n }, (_, j) => rat(i === j ? 1n : 0n)),
   ]);
+
+  const snapLatex = () => {
+    // Format as augmented [left|right] with vertical bar
+    const rows = ratAug.map((row) => {
+      const left = row.slice(0, n).map(ratToLatex).join(" & ");
+      const right = row.slice(n).map(ratToLatex).join(" & ");
+      return `${left} & ${right}`;
+    });
+    const cols = "c".repeat(n) + "|" + "c".repeat(n);
+    return `\\left[\\begin{array}{${cols}} ${rows.join(" \\\\ ")} \\end{array}\\right]`;
+  };
 
   steps.push({
     descriptionZh: "初始增廣矩陣：",
     descriptionEn: "Initial augmented matrix:",
-    latex: augMatrixLatex(aug, n),
+    latex: snapLatex(),
   });
 
   for (let col = 0; col < n; col++) {
-    // Find pivot
+    // Find pivot (partial pivoting)
     let pivotRow = -1;
+    let maxAbs = 0;
     for (let row = col; row < n; row++) {
-      if (Math.abs(aug[row][col]) > 1e-10) { pivotRow = row; break; }
+      const abs = Math.abs(ratToNumber(ratAug[row][col]));
+      if (abs > maxAbs) { maxAbs = abs; pivotRow = row; }
     }
-    if (pivotRow === -1) {
+    if (pivotRow === -1 || maxAbs < 1e-12) {
       return { steps, error: "singular" };
     }
-
     // Swap rows
     if (pivotRow !== col) {
-      [aug[col], aug[pivotRow]] = [aug[pivotRow], aug[col]];
+      [ratAug[col], ratAug[pivotRow]] = [ratAug[pivotRow], ratAug[col]];
       steps.push({
         descriptionZh: `交換第 ${col+1} 行與第 ${pivotRow+1} 行，使主元非零`,
         descriptionEn: `Swap row ${col+1} ↔ row ${pivotRow+1} to get non-zero pivot`,
-        latex: `R_{${col+1}} \\leftrightarrow R_{${pivotRow+1}} \\Rightarrow ${augMatrixLatex(aug, n)}`,
+        latex: `R_{${col+1}} \\leftrightarrow R_{${pivotRow+1}} \\Rightarrow ${snapLatex()}`,
       });
     }
-
     // Scale pivot row
-    const pivot = aug[col][col];
-    if (Math.abs(pivot - 1) > 1e-10) {
-      for (let j = 0; j < 2 * n; j++) aug[col][j] /= pivot;
+    const pivot = ratAug[col][col];
+    if (!(pivot.n === 1n && pivot.d === 1n)) {
+      for (let j = 0; j < 2 * n; j++) {
+        ratAug[col][j] = ratDiv(ratAug[col][j], pivot);
+      }
       steps.push({
-        descriptionZh: `將第 ${col+1} 行除以主元 ${fmt(pivot)}，令主元 = 1`,
-        descriptionEn: `Divide row ${col+1} by pivot ${fmt(pivot)} so pivot = 1`,
-        latex: `R_{${col+1}} \\leftarrow \\frac{1}{${fmt(pivot)}} R_{${col+1}} \\Rightarrow ${augMatrixLatex(aug, n)}`,
+        descriptionZh: `將第 ${col+1} 行除以主元 ${ratToStr(pivot)}，令主元 = 1`,
+        descriptionEn: `Divide row ${col+1} by pivot ${ratToStr(pivot)} so pivot = 1`,
+        latex: `R_{${col+1}} \\leftarrow \\frac{1}{${ratToLatex(pivot)}} R_{${col+1}} \\Rightarrow ${snapLatex()}`,
       });
     }
-
-    // Eliminate column entries
+    // Eliminate all other rows in this column
     for (let row = 0; row < n; row++) {
       if (row === col) continue;
-      const factor = aug[row][col];
-      if (Math.abs(factor) < 1e-10) continue;
-      for (let j = 0; j < 2 * n; j++) aug[row][j] -= factor * aug[col][j];
-      const sign = factor > 0 ? "-" : "+";
+      const factor = ratAug[row][col];
+      if (ratIsZero(factor)) continue;
+      for (let j = 0; j < 2 * n; j++) {
+        ratAug[row][j] = ratSub(ratAug[row][j], ratMul(factor, ratAug[col][j]));
+      }
+      const fNum = ratToNumber(factor);
+      const sign = fNum > 0 ? "-" : "+";
+      const absFactorLatex = fNum < 0 ? ratToLatex(ratNeg(factor)) : ratToLatex(factor);
       steps.push({
-        descriptionZh: `消去第 ${row+1} 行第 ${col+1} 列的元素（值 = ${fmt(factor)}）`,
-        descriptionEn: `Eliminate element in row ${row+1}, col ${col+1} (value = ${fmt(factor)})`,
-        latex: `R_{${row+1}} \\leftarrow R_{${row+1}} ${sign} ${fmt(Math.abs(factor))} R_{${col+1}} \\Rightarrow ${augMatrixLatex(aug, n)}`,
+        descriptionZh: `消去第 ${row+1} 行第 ${col+1} 列的元素（值 = ${ratToStr(factor)}）`,
+        descriptionEn: `Eliminate element in row ${row+1}, col ${col+1} (value = ${ratToStr(factor)})`,
+        latex: `R_{${row+1}} \\leftarrow R_{${row+1}} ${sign} ${absFactorLatex} R_{${col+1}} \\Rightarrow ${snapLatex()}`,
       });
     }
   }
 
-  const result = aug.map((row) => row.slice(n).map((v) => parseFloat(v.toFixed(10))));
+  // Extract result (exact rational → number)
+  const result: Matrix = ratAug.map((row) =>
+    row.slice(n).map((v) => ratToNumber(v))
+  );
+  // Build exact LaTeX for result
+  const resultRatRows = ratAug.map((row) => row.slice(n));
+  const resultLatex = ratMatLatex(resultRatRows);
 
   steps.push({
     descriptionZh: "左側已化為單位矩陣，右側即為 A⁻¹",
     descriptionEn: "Left side is now identity; right side is A⁻¹",
-    latex: `[I \\mid A^{-1}] = ${augMatrixLatex(aug, n)}`,
+    latex: `[I \\mid A^{-1}] = ${snapLatex()}`,
   });
-
   steps.push({
-    descriptionZh: "最終結果：逆矩陣 A⁻¹",
-    descriptionEn: "Final result: inverse matrix A⁻¹",
-    latex: `A^{-1} = ${matrixToLatex(result)}`,
+    descriptionZh: "最終結果：逆矩陣 A⁻¹（精確分數形式）",
+    descriptionEn: "Final result: inverse matrix A⁻¹ (exact fraction form)",
+    latex: `A^{-1} = ${resultLatex}`,
     matrix: result,
   });
-
   steps.push({
     descriptionZh: "驗證：A × A⁻¹ = I（單位矩陣）",
     descriptionEn: "Verification: A × A⁻¹ = I (identity matrix)",
     latex: `A \\cdot A^{-1} = I_{${n}}`,
   });
-
   return { result, steps };
 }

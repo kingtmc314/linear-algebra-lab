@@ -24,6 +24,7 @@ import {
 } from "@/lib/matrixMath";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, CheckCircle2, Plus, Trash2 } from "lucide-react";
+import { fromFloat, ratMatLatex } from "@/lib/rational";
 
 type Operation =
   | "add" | "sub" | "mul" | "transpose" | "det" | "inv" | "scalar";
@@ -147,7 +148,14 @@ export default function MatrixPage() {
       switch (op) {
         case "transpose": res = matTranspose(matA); break;
         case "det":       res = matDeterminant(matA); break;
-        case "inv":       res = matInverse(matA); break;
+        case "inv": {
+          res = matInverse(matA);
+          if (!res.error && res.result) {
+            const ratMat = res.result.map((row: number[]) => row.map((v: number) => fromFloat(v)));
+            (res as any).exactLatex = ratMatLatex(ratMat);
+          }
+          break;
+        }
         case "scalar":    res = matScalar(matA, scalar); break;
         default: return;
       }
@@ -431,7 +439,7 @@ export default function MatrixPage() {
             <div className="result-row overflow-x-auto">
               {result.result && (
                 <KatexRenderer
-                  latex={matrixToLatex(result.result)}
+                  latex={(result as any).exactLatex || matrixToLatex(result.result)}
                   displayMode={true}
                 />
               )}

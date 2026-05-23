@@ -8,6 +8,7 @@ import PracticePanel from "@/components/PracticePanel";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { solveLinearSystem, type GeneralSolutionTerm } from "@/lib/linearSystem";
 import { matrixToLatex, fmt, matInverse, matMul } from "@/lib/matrixMath";
+import { fromFloat, mul as ratMul, add as ratAdd, rat, toNumber as ratToNumber, ratToLatex, ratMatLatex } from "@/lib/rational";
 import { generateLinearSystemQuestion } from "@/lib/practiceGenerator";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, CheckCircle2, Infinity, XCircle } from "lucide-react";
@@ -90,18 +91,24 @@ export default function LinearSystemPage() {
       if (numEq === numVar) {
         const invRes = matInverse(coeffs);
         if (!invRes.error && invRes.result) {
-          // Compute x = A^{-1} * b (b as column vector)
-          const bCol = consts.map((v) => [v]);
-          const xCol = matMul(invRes.result, bCol);
-          if (!xCol.error && xCol.result) {
-            const solution = xCol.result.map((row: number[]) => row[0]);
-            setInverseResult({
-              invMatrix: invRes.result,
-              invSteps: invRes.steps,
-              solution,
-              mulSteps: xCol.steps,
-            });
-          }
+          // Compute x = A^{-1} * b using exact rational arithmetic
+          const invRat = invRes.result.map((row: number[]) => row.map((v: number) => fromFloat(v)));
+          const bRat = consts.map((v: number) => fromFloat(v));
+          const xRat = invRat.map((row: any[]) =>
+            row.reduce((acc: any, cell: any, j: number) => ratAdd(acc, ratMul(cell, bRat[j])), rat(0n))
+          );
+          const solution = xRat.map((v: any) => ratToNumber(v));
+          const solutionLatex = xRat.map((v: any) => ratToLatex(v));
+          const invMatRat = invRes.result.map((row: number[]) => row.map((v: number) => fromFloat(v)));
+          const invMatLatexStr = ratMatLatex(invMatRat);
+          setInverseResult({
+            invMatrix: invRes.result,
+            invMatLatex: invMatLatexStr,
+            invSteps: invRes.steps,
+            solution,
+            solutionLatex,
+            mulSteps: [],
+          });
         }
       }
     } catch (e) {
@@ -311,8 +318,9 @@ export default function LinearSystemPage() {
             <div className="p-4 rounded-lg border border-accent/30 bg-accent/5">
               <div className="overflow-x-auto">
                 <KatexRenderer
-                  latex={result.solution
-                    .map((v: number, i: number) => `x_{${i + 1}} = ${fmt(v)}`)
+                  latex={(result.solutionLatex
+                    ? result.solutionLatex.map((latex: string, i: number) => `x_{${i + 1}} = ${latex}`)
+                    : result.solution.map((v: number, i: number) => `x_{${i + 1}} = ${fmt(v)}`))
                     .join(",\\quad ")}
                   displayMode={true}
                 />
@@ -366,23 +374,21 @@ export default function LinearSystemPage() {
                     {lang === "zh" ? "原理：Ax = b ⟹ x = A⁻¹b" : "Principle: Ax = b ⟹ x = A⁻¹b"}
                   </p>
                   <KatexRenderer
-                    latex={`A^{-1} = ${matrixToLatex(inverseResult.invMatrix)}`}
+                    latex={`A^{-1} = ${inverseResult.invMatLatex || matrixToLatex(inverseResult.invMatrix)}`}
                     displayMode={true}
                   />
                 </div>
                 <div className="p-3 rounded-lg border border-accent/30 bg-accent/5 overflow-x-auto">
                   <KatexRenderer
-                    latex={inverseResult.solution
-                      .map((v: number, i: number) => `x_{${i + 1}} = ${fmt(v)}`)
+                    latex={(inverseResult.solutionLatex
+                      ? inverseResult.solutionLatex.map((latex: string, i: number) => `x_{${i + 1}} = ${latex}`)
+                      : inverseResult.solution.map((v: number, i: number) => `x_{${i + 1}} = ${fmt(v)}`))
                       .join(",\\quad ")}
                     displayMode={true}
                   />
                 </div>
                 <StepDisplay
-                  steps={[
-                    ...inverseResult.invSteps.slice(0, 6),
-                    ...inverseResult.mulSteps.slice(0, 4),
-                  ]}
+                  steps={inverseResult.invSteps.slice(0, 8)}
                   title={lang === "zh" ? "逆矩陣法步驟" : "Inverse Method Steps"}
                 />
               </div>

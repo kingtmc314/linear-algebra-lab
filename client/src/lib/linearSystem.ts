@@ -1,9 +1,28 @@
 // ============================================================
-// Linear System Solver — Detailed Step-by-Step Gaussian Elimination
-// Each step shows the exact row operation and resulting matrix state
+// Linear System Solver — Exact Rational Arithmetic
+// Uses bigint-based fractions to guarantee exact solutions
+// (no floating-point drift — 1/3 stays 1/3, not 0.333...)
 // ============================================================
 
-import { fmt, matrixToLatex } from "./matrixMath";
+import { fmt } from "./matrixMath";
+import {
+  type Rational,
+  type RatMatrix,
+  rat,
+  fromFloat,
+  add,
+  sub,
+  mul,
+  div,
+  neg,
+  isZero,
+  toNumber,
+  ratToLatex,
+  ratToStr,
+  ratAugLatex,
+  toRatMatrix,
+  fromRatMatrix,
+} from "./rational";
 
 export type SolutionType = "unique" | "infinite" | "none";
 
@@ -16,50 +35,47 @@ export interface SystemStep {
 
 export interface GeneralSolutionTerm {
   varIndex: number;       // which variable (0-based)
-  constant: number;       // constant part
+  constant: number;       // constant part (numeric, for display)
+  constantLatex: string;  // LaTeX of constant part (exact fraction)
   kCoeffs: number[];      // coefficient for each free variable k_1, k_2, ...
+  kCoeffsLatex: string[]; // LaTeX of each k coefficient (exact fraction)
 }
 
 export interface SystemResult {
   type: SolutionType;
   solution?: number[];
-  freeVariables?: number[];       // indices of free variables
-  generalSolution?: GeneralSolutionTerm[];  // parametric form for infinite solutions
+  solutionLatex?: string[];   // exact LaTeX for each solution variable
+  freeVariables?: number[];
+  generalSolution?: GeneralSolutionTerm[];
   steps: SystemStep[];
   error?: string;
 }
 
-/** Format augmented matrix [A|b] as LaTeX */
-function augLatex(aug: number[][], n: number): string {
-  const rows = aug.map((row) => {
-    const left = row.slice(0, n).map(fmt).join(" & ");
-    const right = fmt(row[n]);
-    return `${left} & ${right}`;
-  });
-  const cols = "c".repeat(n) + "|c";
-  return `\\left[\\begin{array}{${cols}} ${rows.join(" \\\\ ")} \\end{array}\\right]`;
-}
-
-/** Solve Ax = b using Gaussian elimination with partial pivoting */
+/** Solve Ax = b using exact rational Gaussian elimination */
 export function solveLinearSystem(A: number[][], b: number[]): SystemResult {
   const m = A.length;
   const n = A[0].length;
   const steps: SystemStep[] = [];
 
-  // Build augmented matrix [A | b]
-  const aug: number[][] = A.map((row, i) => [...row, b[i]]);
+  // Build augmented rational matrix [A | b]
+  const aug: RatMatrix = A.map((row, i) => [
+    ...row.map((v) => fromFloat(v)),
+    fromFloat(b[i]),
+  ]);
+
+  const snapNum = (): number[][] => aug.map((r) => r.map(toNumber));
 
   steps.push({
-    descriptionZh: `建立增廣矩陣 [A | b]：將係數矩陣與常數向量合併為 ${m}×${n+1} 矩陣`,
-    descriptionEn: `Form augmented matrix [A | b]: combine coefficient matrix and constant vector into ${m}×${n+1} matrix`,
-    matrix: aug.map((r) => [...r]),
-    latex: augLatex(aug, n),
+    descriptionZh: `建立增廣矩陣 [A | b]：將係數矩陣與常數向量合併為 ${m}×${n + 1} 矩陣`,
+    descriptionEn: `Form augmented matrix [A | b]: combine coefficient matrix and constant vector into ${m}×${n + 1} matrix`,
+    matrix: snapNum(),
+    latex: ratAugLatex(aug, n),
   });
 
   steps.push({
     descriptionZh: "目標：使用初等列變換（高斯消去法）將增廣矩陣化為行階梯形式（REF）",
     descriptionEn: "Goal: use elementary row operations (Gaussian elimination) to reduce augmented matrix to Row Echelon Form (REF)",
-    matrix: aug.map((r) => [...r]),
+    matrix: snapNum(),
     latex: `\\text{Elementary row operations: } R_i \\leftrightarrow R_j,\\; cR_i,\\; R_i + cR_j`,
   });
 
@@ -67,20 +83,20 @@ export function solveLinearSystem(A: number[][], b: number[]): SystemResult {
   const pivotCols: number[] = [];
 
   for (let col = 0; col < n && pivotRow < m; col++) {
-    // Find max pivot (partial pivoting)
+    // Find max pivot (partial pivoting by absolute value)
     let maxRow = pivotRow;
+    let maxAbs = Math.abs(toNumber(aug[maxRow][col]));
     for (let row = pivotRow + 1; row < m; row++) {
-      if (Math.abs(aug[row][col]) > Math.abs(aug[maxRow][col])) {
-        maxRow = row;
-      }
+      const abs = Math.abs(toNumber(aug[row][col]));
+      if (abs > maxAbs) { maxAbs = abs; maxRow = row; }
     }
 
-    if (Math.abs(aug[maxRow][col]) < 1e-10) {
+    if (isZero(aug[maxRow][col])) {
       steps.push({
-        descriptionZh: `第 ${col+1} 列全為零，跳過（自由變量列）`,
-        descriptionEn: `Column ${col+1} is all zeros — skip (free variable column)`,
-        matrix: aug.map((r) => [...r]),
-        latex: `\\text{Column } ${col+1} \\text{ has no pivot — free variable}`,
+        descriptionZh: `第 ${col + 1} 列全為零，跳過（自由變量列）`,
+        descriptionEn: `Column ${col + 1} is all zeros — skip (free variable column)`,
+        matrix: snapNum(),
+        latex: `\\text{Column } ${col + 1} \\text{ has no pivot — free variable}`,
       });
       continue;
     }
@@ -89,10 +105,10 @@ export function solveLinearSystem(A: number[][], b: number[]): SystemResult {
     if (maxRow !== pivotRow) {
       [aug[pivotRow], aug[maxRow]] = [aug[maxRow], aug[pivotRow]];
       steps.push({
-        descriptionZh: `部分主元選取：交換第 ${pivotRow+1} 行與第 ${maxRow+1} 行，使絕對值最大的元素成為主元`,
-        descriptionEn: `Partial pivoting: swap row ${pivotRow+1} ↔ row ${maxRow+1} to bring largest absolute value to pivot position`,
-        matrix: aug.map((r) => [...r]),
-        latex: `R_{${pivotRow+1}} \\leftrightarrow R_{${maxRow+1}} \\Rightarrow ${augLatex(aug, n)}`,
+        descriptionZh: `部分主元選取：交換第 ${pivotRow + 1} 行與第 ${maxRow + 1} 行`,
+        descriptionEn: `Partial pivoting: swap row ${pivotRow + 1} ↔ row ${maxRow + 1}`,
+        matrix: snapNum(),
+        latex: `R_{${pivotRow + 1}} \\leftrightarrow R_{${maxRow + 1}} \\Rightarrow ${ratAugLatex(aug, n)}`,
       });
     }
 
@@ -100,26 +116,27 @@ export function solveLinearSystem(A: number[][], b: number[]): SystemResult {
     const pivotVal = aug[pivotRow][col];
 
     steps.push({
-      descriptionZh: `主元為 a[${pivotRow+1}][${col+1}] = ${fmt(pivotVal)}，對其下方各行進行消去`,
-      descriptionEn: `Pivot is a[${pivotRow+1}][${col+1}] = ${fmt(pivotVal)}; eliminate entries below`,
-      matrix: aug.map((r) => [...r]),
-      latex: `\\text{Pivot: } a_{${pivotRow+1},${col+1}} = ${fmt(pivotVal)}`,
+      descriptionZh: `主元為 a[${pivotRow + 1}][${col + 1}] = ${ratToStr(pivotVal)}，對其下方各行進行消去`,
+      descriptionEn: `Pivot is a[${pivotRow + 1}][${col + 1}] = ${ratToStr(pivotVal)}; eliminate entries below`,
+      matrix: snapNum(),
+      latex: `\\text{Pivot: } a_{${pivotRow + 1},${col + 1}} = ${ratToLatex(pivotVal)}`,
     });
 
     // Eliminate below pivot
     for (let row = pivotRow + 1; row < m; row++) {
-      if (Math.abs(aug[row][col]) < 1e-10) continue;
-      const factor = aug[row][col] / pivotVal;
-      const oldRowVal = aug[row][col];
+      if (isZero(aug[row][col])) continue;
+      const factor = div(aug[row][col], pivotVal);
+      const oldVal = aug[row][col];
       for (let j = col; j <= n; j++) {
-        aug[row][j] -= factor * aug[pivotRow][j];
+        aug[row][j] = sub(aug[row][j], mul(factor, aug[pivotRow][j]));
       }
-      const sign = factor > 0 ? "-" : "+";
+      const sign = toNumber(factor) > 0 ? "-" : "+";
+      const absFactorLatex = toNumber(factor) < 0 ? ratToLatex(neg(factor)) : ratToLatex(factor);
       steps.push({
-        descriptionZh: `消去第 ${row+1} 行第 ${col+1} 列的元素：乘數 = ${fmt(oldRowVal)} ÷ ${fmt(pivotVal)} = ${fmt(factor)}`,
-        descriptionEn: `Eliminate element in row ${row+1}, col ${col+1}: multiplier = ${fmt(oldRowVal)} ÷ ${fmt(pivotVal)} = ${fmt(factor)}`,
-        matrix: aug.map((r) => [...r]),
-        latex: `R_{${row+1}} \\leftarrow R_{${row+1}} ${sign} ${fmt(Math.abs(factor))} R_{${pivotRow+1}} \\Rightarrow ${augLatex(aug, n)}`,
+        descriptionZh: `消去第 ${row + 1} 行第 ${col + 1} 列：乘數 = ${ratToStr(oldVal)} ÷ ${ratToStr(pivotVal)} = ${ratToStr(factor)}`,
+        descriptionEn: `Eliminate row ${row + 1}, col ${col + 1}: multiplier = ${ratToStr(oldVal)} ÷ ${ratToStr(pivotVal)} = ${ratToStr(factor)}`,
+        matrix: snapNum(),
+        latex: `R_{${row + 1}} \\leftarrow R_{${row + 1}} ${sign} ${absFactorLatex} R_{${pivotRow + 1}} \\Rightarrow ${ratAugLatex(aug, n)}`,
       });
     }
 
@@ -131,57 +148,58 @@ export function solveLinearSystem(A: number[][], b: number[]): SystemResult {
   steps.push({
     descriptionZh: `行階梯形式完成，矩陣秩 = ${rank}，方程數 = ${m}，未知數 = ${n}`,
     descriptionEn: `Row Echelon Form complete. Rank = ${rank}, equations = ${m}, unknowns = ${n}`,
-    matrix: aug.map((r) => [...r]),
-    latex: `\\text{REF: rank}(A) = ${rank} \\Rightarrow ${augLatex(aug, n)}`,
+    matrix: snapNum(),
+    latex: `\\text{REF: rank}(A) = ${rank} \\Rightarrow ${ratAugLatex(aug, n)}`,
   });
 
   // Check consistency
   for (let row = rank; row < m; row++) {
-    if (Math.abs(aug[row][n]) > 1e-10) {
+    if (!isZero(aug[row][n])) {
       steps.push({
-        descriptionZh: `矛盾行：第 ${row+1} 行為 [0...0 | ${fmt(aug[row][n])}]，即 0 = ${fmt(aug[row][n])}，方程組無解`,
-        descriptionEn: `Contradiction row: row ${row+1} is [0...0 | ${fmt(aug[row][n])}], i.e. 0 = ${fmt(aug[row][n])} — no solution`,
-        matrix: aug.map((r) => [...r]),
-        latex: `0 = ${fmt(aug[row][n])} \\Rightarrow \\text{Inconsistent — No Solution}`,
+        descriptionZh: `矛盾行：第 ${row + 1} 行為 [0...0 | ${ratToStr(aug[row][n])}]，即 0 = ${ratToStr(aug[row][n])}，方程組無解`,
+        descriptionEn: `Contradiction row: row ${row + 1} is [0...0 | ${ratToStr(aug[row][n])}], i.e. 0 = ${ratToStr(aug[row][n])} — no solution`,
+        matrix: snapNum(),
+        latex: `0 = ${ratToLatex(aug[row][n])} \\Rightarrow \\text{Inconsistent — No Solution}`,
       });
       return { type: "none", steps };
     }
   }
 
-  // Infinite solutions — compute parametric (k) general solution
+  // ── Infinite solutions ────────────────────────────────────────────────────
   if (rank < n) {
     const pivotSet = new Set(pivotCols);
     const freeVars: number[] = [];
     for (let j = 0; j < n; j++) {
       if (!pivotSet.has(j)) freeVars.push(j);
     }
-    const freeVarNames = freeVars.map((j) => `x_{${j+1}}`).join(", ");
+    const freeVarNames = freeVars.map((j) => `x_{${j + 1}}`).join(", ");
     const kCount = freeVars.length;
 
     steps.push({
       descriptionZh: `秩 ${rank} < 未知數個數 ${n}，有 ${kCount} 個自由變量：${freeVarNames}，方程組有無限多解`,
       descriptionEn: `Rank ${rank} < unknowns ${n}; ${kCount} free variable(s): ${freeVarNames} — infinitely many solutions`,
-      matrix: aug.map((r) => [...r]),
+      matrix: snapNum(),
       latex: `\\text{rank}(A) = ${rank} < ${n} = n \\Rightarrow \\text{Infinite Solutions}`,
     });
 
-    // Perform RREF on the pivot rows to extract parametric solution
-    // Scale pivot rows
+    // RREF: scale pivot rows
     for (let row = rank - 1; row >= 0; row--) {
       const col = pivotCols[row];
       const pivot = aug[row][col];
-      if (Math.abs(pivot - 1) > 1e-10) {
-        aug[row] = aug[row].map((v) => v / pivot);
+      if (pivot.n !== pivot.d || pivot.n !== 1n) {
+        for (let j = 0; j <= n; j++) {
+          aug[row][j] = div(aug[row][j], pivot);
+        }
       }
     }
-    // Eliminate above pivots (RREF)
+    // Eliminate above pivots
     for (let row = rank - 1; row >= 0; row--) {
       const col = pivotCols[row];
       for (let above = 0; above < row; above++) {
         const factor = aug[above][col];
-        if (Math.abs(factor) < 1e-10) continue;
+        if (isZero(factor)) continue;
         for (let j = 0; j <= n; j++) {
-          aug[above][j] -= factor * aug[row][j];
+          aug[above][j] = sub(aug[above][j], mul(factor, aug[row][j]));
         }
       }
     }
@@ -189,57 +207,67 @@ export function solveLinearSystem(A: number[][], b: number[]): SystemResult {
     steps.push({
       descriptionZh: `簡化行階梯形式（RREF），以便讀取通解`,
       descriptionEn: `Reduced Row Echelon Form (RREF) for reading general solution`,
-      matrix: aug.map((r) => [...r]),
-      latex: `\\text{RREF} \\Rightarrow ${augLatex(aug, n)}`,
+      matrix: snapNum(),
+      latex: `\\text{RREF} \\Rightarrow ${ratAugLatex(aug, n)}`,
     });
 
-    // Assign free variable names: k (if 1), k_1, k_2, ... (if multiple)
-    const kNames = kCount === 1 ? ["k"] : freeVars.map((_, i) => `k_{${i+1}}`);
-
-    // Let free variables = k_i
-    const letSteps = freeVars.map((fv, i) =>
-      `\\text{Let } x_{${fv+1}} = ${kNames[i]} \\in \\mathbb{R}`
-    ).join(",\\quad ");
+    const kNames = kCount === 1 ? ["k"] : freeVars.map((_, i) => `k_{${i + 1}}`);
+    const letSteps = freeVars
+      .map((fv, i) => `\\text{Let } x_{${fv + 1}} = ${kNames[i]} \\in \\mathbb{R}`)
+      .join(",\\quad ");
     steps.push({
       descriptionZh: `令自由變量為任意實數 ${kNames.join(", ")}`,
       descriptionEn: `Let free variables equal arbitrary real numbers ${kNames.join(", ")}`,
-      matrix: aug.map((r) => [...r]),
+      matrix: snapNum(),
       latex: letSteps,
     });
 
-    // Build general solution terms
     const generalSolution: GeneralSolutionTerm[] = [];
     for (let vi = 0; vi < n; vi++) {
       const freeIdx = freeVars.indexOf(vi);
       if (freeIdx >= 0) {
-        // This is a free variable: x_vi = 0 + 0*k_1 + ... + 1*k_{freeIdx+1} + ...
         const kCoeffs = freeVars.map((_, i) => (i === freeIdx ? 1 : 0));
-        generalSolution.push({ varIndex: vi, constant: 0, kCoeffs });
+        const kCoeffsLatex = freeVars.map((_, i) => (i === freeIdx ? "1" : "0"));
+        generalSolution.push({
+          varIndex: vi,
+          constant: 0,
+          constantLatex: "0",
+          kCoeffs,
+          kCoeffsLatex,
+        });
       } else {
-        // Pivot variable: read from RREF row
         const pivotRowIdx = pivotCols.indexOf(vi);
         if (pivotRowIdx < 0) continue;
         const row = aug[pivotRowIdx];
-        const constant = row[n]; // RHS
-        // kCoeffs: coefficient of each free variable in this pivot row
-        const kCoeffs = freeVars.map((fv) => -row[fv]); // x_pivot = const - sum(coeff * free)
-        generalSolution.push({ varIndex: vi, constant, kCoeffs });
+        const constRat = row[n];
+        const kCoeffsRat = freeVars.map((fv) => neg(row[fv]));
+        generalSolution.push({
+          varIndex: vi,
+          constant: toNumber(constRat),
+          constantLatex: ratToLatex(constRat),
+          kCoeffs: kCoeffsRat.map(toNumber),
+          kCoeffsLatex: kCoeffsRat.map(ratToLatex),
+        });
       }
     }
 
     // Build LaTeX for general solution
     const genLatexParts = generalSolution.map((term) => {
-      const kParts = term.kCoeffs
-        .map((c, i) => {
-          if (Math.abs(c) < 1e-10) return "";
+      const kParts = term.kCoeffsLatex
+        .map((cLatex, i) => {
+          const c = term.kCoeffs[i];
+          if (Math.abs(c) < 1e-12) return "";
           const sign = c > 0 ? "+" : "-";
-          const absC = Math.abs(c);
-          const coefStr = Math.abs(absC - 1) < 1e-10 ? "" : fmt(absC);
+          const absLatex = c < 0
+            ? (cLatex.startsWith("-\\frac") ? cLatex.slice(1) : cLatex.replace(/^-/, ""))
+            : cLatex;
+          const coefStr = Math.abs(Math.abs(c) - 1) < 1e-12 ? "" : absLatex;
           return `${sign} ${coefStr}${kNames[i]}`;
         })
         .filter(Boolean)
         .join(" ");
-      const constStr = Math.abs(term.constant) < 1e-10 && kParts ? "" : fmt(term.constant);
+      const isConstZero = Math.abs(term.constant) < 1e-12;
+      const constStr = isConstZero && kParts ? "" : term.constantLatex;
       const rhs = constStr + (kParts ? " " + kParts : "") || "0";
       return `x_{${term.varIndex + 1}} = ${rhs.trim()}`;
     });
@@ -247,32 +275,34 @@ export function solveLinearSystem(A: number[][], b: number[]): SystemResult {
     steps.push({
       descriptionZh: `通解（以任意數 ${kNames.join(", ")} 表示）`,
       descriptionEn: `General solution (expressed using arbitrary parameter${kCount > 1 ? "s" : ""} ${kNames.join(", ")})`,
-      matrix: aug.map((r) => [...r]),
+      matrix: snapNum(),
       latex: genLatexParts.join(",\\quad "),
     });
 
     return { type: "infinite", steps, freeVariables: freeVars, generalSolution };
   }
 
-  // Unique solution — back substitution
+  // ── Unique solution ───────────────────────────────────────────────────────
   steps.push({
     descriptionZh: "秩 = 未知數個數，方程組有唯一解，進行回代（Back Substitution）",
     descriptionEn: "Rank = number of unknowns — unique solution exists; perform back substitution",
-    matrix: aug.map((r) => [...r]),
+    matrix: snapNum(),
     latex: `\\text{rank}(A) = ${rank} = n \\Rightarrow \\text{Unique Solution}`,
   });
 
-  // Scale pivot rows to 1 (RREF)
+  // Scale pivot rows to 1
   for (let row = rank - 1; row >= 0; row--) {
     const col = pivotCols[row];
     const pivot = aug[row][col];
-    if (Math.abs(pivot - 1) > 1e-10) {
-      aug[row] = aug[row].map((v) => v / pivot);
+    if (!(pivot.n === 1n && pivot.d === 1n)) {
+      for (let j = 0; j <= n; j++) {
+        aug[row][j] = div(aug[row][j], pivot);
+      }
       steps.push({
-        descriptionZh: `第 ${row+1} 行除以主元 ${fmt(pivot)}，令主元 = 1`,
-        descriptionEn: `Divide row ${row+1} by pivot ${fmt(pivot)} to normalize`,
-        matrix: aug.map((r) => [...r]),
-        latex: `R_{${row+1}} \\leftarrow \\frac{1}{${fmt(pivot)}} R_{${row+1}} \\Rightarrow ${augLatex(aug, n)}`,
+        descriptionZh: `第 ${row + 1} 行除以主元 ${ratToStr(pivot)}，令主元 = 1`,
+        descriptionEn: `Divide row ${row + 1} by pivot ${ratToStr(pivot)} to normalize`,
+        matrix: snapNum(),
+        latex: `R_{${row + 1}} \\leftarrow \\frac{1}{${ratToLatex(pivot)}} R_{${row + 1}} \\Rightarrow ${ratAugLatex(aug, n)}`,
       });
     }
   }
@@ -282,16 +312,17 @@ export function solveLinearSystem(A: number[][], b: number[]): SystemResult {
     const col = pivotCols[row];
     for (let above = 0; above < row; above++) {
       const factor = aug[above][col];
-      if (Math.abs(factor) < 1e-10) continue;
+      if (isZero(factor)) continue;
       for (let j = 0; j <= n; j++) {
-        aug[above][j] -= factor * aug[row][j];
+        aug[above][j] = sub(aug[above][j], mul(factor, aug[row][j]));
       }
-      const sign = factor > 0 ? "-" : "+";
+      const sign = toNumber(factor) > 0 ? "-" : "+";
+      const absFactorLatex = toNumber(factor) < 0 ? ratToLatex(neg(factor)) : ratToLatex(factor);
       steps.push({
-        descriptionZh: `消去第 ${above+1} 行第 ${col+1} 列的元素（回代）`,
-        descriptionEn: `Eliminate element above pivot in row ${above+1}, col ${col+1} (back substitution)`,
-        matrix: aug.map((r) => [...r]),
-        latex: `R_{${above+1}} \\leftarrow R_{${above+1}} ${sign} ${fmt(Math.abs(factor))} R_{${row+1}} \\Rightarrow ${augLatex(aug, n)}`,
+        descriptionZh: `消去第 ${above + 1} 行第 ${col + 1} 列的元素（回代）`,
+        descriptionEn: `Eliminate element above pivot in row ${above + 1}, col ${col + 1} (back substitution)`,
+        matrix: snapNum(),
+        latex: `R_{${above + 1}} \\leftarrow R_{${above + 1}} ${sign} ${absFactorLatex} R_{${row + 1}} \\Rightarrow ${ratAugLatex(aug, n)}`,
       });
     }
   }
@@ -299,20 +330,25 @@ export function solveLinearSystem(A: number[][], b: number[]): SystemResult {
   steps.push({
     descriptionZh: "簡化行階梯形式（RREF）完成",
     descriptionEn: "Reduced Row Echelon Form (RREF) complete",
-    matrix: aug.map((r) => [...r]),
-    latex: `\\text{RREF} \\Rightarrow ${augLatex(aug, n)}`,
+    matrix: snapNum(),
+    latex: `\\text{RREF} \\Rightarrow ${ratAugLatex(aug, n)}`,
   });
 
-  const solution = pivotCols.map((col, row) => parseFloat(aug[row][n].toFixed(10)));
-  const fullSolution = new Array(n).fill(0);
-  pivotCols.forEach((col, row) => { fullSolution[col] = solution[row]; });
+  // Extract exact solution
+  const solutionRat: Rational[] = new Array(n).fill(rat(0n));
+  pivotCols.forEach((col, row) => {
+    solutionRat[col] = aug[row][n];
+  });
+
+  const solution = solutionRat.map(toNumber);
+  const solutionLatex = solutionRat.map(ratToLatex);
 
   steps.push({
-    descriptionZh: "讀取解：從 RREF 直接讀出每個變量的值",
-    descriptionEn: "Read solution: directly read each variable's value from RREF",
-    matrix: [fullSolution],
-    latex: fullSolution.map((v, i) => `x_{${i+1}} = ${fmt(v)}`).join(",\\quad "),
+    descriptionZh: "讀取解：從 RREF 直接讀出每個變量的精確值",
+    descriptionEn: "Read solution: directly read each variable's exact value from RREF",
+    matrix: [solution],
+    latex: solutionRat.map((v, i) => `x_{${i + 1}} = ${ratToLatex(v)}`).join(",\\quad "),
   });
 
-  return { type: "unique", solution: fullSolution, steps };
+  return { type: "unique", solution, solutionLatex, steps };
 }

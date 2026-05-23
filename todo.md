@@ -131,3 +131,13 @@
 - [x] 新增 MatrixTransformPlot.tsx：矩陣幾何變換視覺化（單位正方形/圓/基向量的線性變換效果）
 - [x] MatrixPage 新增「幾何變換」分頁
 - [x] TypeScript 無錯誤，所有 20 個測試通過
+
+## Phase 14: 精確值系統擴充（聯立方程組 + 逆矩陣）
+
+- [x] 建立 rational.ts — 精確有理數算術庫（BigInt 分子/分母，GCD 化簡）
+- [x] 改寫 linearSystem.ts — 高斯消去法全程使用有理數算術，解以精確分數 LaTeX 輸出
+- [x] 更新 matrixMath.ts — matInverse 使用有理數算術，逆矩陣元素以精確分數顯示
+- [x] 更新 LinearSystemPage — 唯一解和逆矩陣法解均以精確分數顯示
+- [x] 更新 MatrixPage — 逆矩陣結果以精確分數 LaTeX 渲染
+- [x] 更新 tsconfig.json — 加入 target ES2020 啟用 BigInt 支援
+- [x] 所有 20 個測試通過，TypeScript 無錯誤
