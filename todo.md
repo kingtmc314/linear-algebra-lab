@@ -45,3 +45,12 @@
 ## Phase 6: GitHub Sync
 - [x] Update GitHub repository with new code
 - [x] Save checkpoint (v2.0.0, version: d4e4ee2f)
+
+## Phase 7: 特徵值/特徵向量功能
+- [x] 實作 eigenMath.ts：特徵多項式展開、求根、特徵向量計算（含詳細步驟）
+- [x] 建立 EigenPage.tsx 頁面（2×2 及 3×3 矩陣支援）
+- [x] 更新 App.tsx 路由及側邊欄導航
+- [x] 更新 LanguageContext.tsx 加入中英翻譯
+- [x] 更新知識點庫加入特徵值知識點（3 個新條目）
+- [x] 寫 eigenMath 單元測試（14 個測試，全部通過）
+- [x] 所有 20 個測試通過
