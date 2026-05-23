@@ -14,10 +14,17 @@ export interface SystemStep {
   latex: string;
 }
 
+export interface GeneralSolutionTerm {
+  varIndex: number;       // which variable (0-based)
+  constant: number;       // constant part
+  kCoeffs: number[];      // coefficient for each free variable k_1, k_2, ...
+}
+
 export interface SystemResult {
   type: SolutionType;
   solution?: number[];
-  freeVariables?: number[];
+  freeVariables?: number[];       // indices of free variables
+  generalSolution?: GeneralSolutionTerm[];  // parametric form for infinite solutions
   steps: SystemStep[];
   error?: string;
 }
@@ -141,21 +148,110 @@ export function solveLinearSystem(A: number[][], b: number[]): SystemResult {
     }
   }
 
-  // Infinite solutions
+  // Infinite solutions — compute parametric (k) general solution
   if (rank < n) {
-    const freeVars = [];
     const pivotSet = new Set(pivotCols);
+    const freeVars: number[] = [];
     for (let j = 0; j < n; j++) {
       if (!pivotSet.has(j)) freeVars.push(j);
     }
     const freeVarNames = freeVars.map((j) => `x_{${j+1}}`).join(", ");
+    const kCount = freeVars.length;
+
     steps.push({
-      descriptionZh: `秩 ${rank} < 未知數個數 ${n}，有 ${n - rank} 個自由變量：${freeVarNames}，方程組有無限多解`,
-      descriptionEn: `Rank ${rank} < unknowns ${n}; ${n - rank} free variable(s): ${freeVarNames} — infinitely many solutions`,
+      descriptionZh: `秩 ${rank} < 未知數個數 ${n}，有 ${kCount} 個自由變量：${freeVarNames}，方程組有無限多解`,
+      descriptionEn: `Rank ${rank} < unknowns ${n}; ${kCount} free variable(s): ${freeVarNames} — infinitely many solutions`,
       matrix: aug.map((r) => [...r]),
-      latex: `\\text{rank}(A) = ${rank} < ${n} = n \\Rightarrow \\text{Infinite Solutions (free vars: } ${freeVarNames}\\text{)}`,
+      latex: `\\text{rank}(A) = ${rank} < ${n} = n \\Rightarrow \\text{Infinite Solutions}`,
     });
-    return { type: "infinite", steps, freeVariables: freeVars };
+
+    // Perform RREF on the pivot rows to extract parametric solution
+    // Scale pivot rows
+    for (let row = rank - 1; row >= 0; row--) {
+      const col = pivotCols[row];
+      const pivot = aug[row][col];
+      if (Math.abs(pivot - 1) > 1e-10) {
+        aug[row] = aug[row].map((v) => v / pivot);
+      }
+    }
+    // Eliminate above pivots (RREF)
+    for (let row = rank - 1; row >= 0; row--) {
+      const col = pivotCols[row];
+      for (let above = 0; above < row; above++) {
+        const factor = aug[above][col];
+        if (Math.abs(factor) < 1e-10) continue;
+        for (let j = 0; j <= n; j++) {
+          aug[above][j] -= factor * aug[row][j];
+        }
+      }
+    }
+
+    steps.push({
+      descriptionZh: `簡化行階梯形式（RREF），以便讀取通解`,
+      descriptionEn: `Reduced Row Echelon Form (RREF) for reading general solution`,
+      matrix: aug.map((r) => [...r]),
+      latex: `\\text{RREF} \\Rightarrow ${augLatex(aug, n)}`,
+    });
+
+    // Assign free variable names: k (if 1), k_1, k_2, ... (if multiple)
+    const kNames = kCount === 1 ? ["k"] : freeVars.map((_, i) => `k_{${i+1}}`);
+
+    // Let free variables = k_i
+    const letSteps = freeVars.map((fv, i) =>
+      `\\text{Let } x_{${fv+1}} = ${kNames[i]} \\in \\mathbb{R}`
+    ).join(",\\quad ");
+    steps.push({
+      descriptionZh: `令自由變量為任意實數 ${kNames.join(", ")}`,
+      descriptionEn: `Let free variables equal arbitrary real numbers ${kNames.join(", ")}`,
+      matrix: aug.map((r) => [...r]),
+      latex: letSteps,
+    });
+
+    // Build general solution terms
+    const generalSolution: GeneralSolutionTerm[] = [];
+    for (let vi = 0; vi < n; vi++) {
+      const freeIdx = freeVars.indexOf(vi);
+      if (freeIdx >= 0) {
+        // This is a free variable: x_vi = 0 + 0*k_1 + ... + 1*k_{freeIdx+1} + ...
+        const kCoeffs = freeVars.map((_, i) => (i === freeIdx ? 1 : 0));
+        generalSolution.push({ varIndex: vi, constant: 0, kCoeffs });
+      } else {
+        // Pivot variable: read from RREF row
+        const pivotRowIdx = pivotCols.indexOf(vi);
+        if (pivotRowIdx < 0) continue;
+        const row = aug[pivotRowIdx];
+        const constant = row[n]; // RHS
+        // kCoeffs: coefficient of each free variable in this pivot row
+        const kCoeffs = freeVars.map((fv) => -row[fv]); // x_pivot = const - sum(coeff * free)
+        generalSolution.push({ varIndex: vi, constant, kCoeffs });
+      }
+    }
+
+    // Build LaTeX for general solution
+    const genLatexParts = generalSolution.map((term) => {
+      const kParts = term.kCoeffs
+        .map((c, i) => {
+          if (Math.abs(c) < 1e-10) return "";
+          const sign = c > 0 ? "+" : "-";
+          const absC = Math.abs(c);
+          const coefStr = Math.abs(absC - 1) < 1e-10 ? "" : fmt(absC);
+          return `${sign} ${coefStr}${kNames[i]}`;
+        })
+        .filter(Boolean)
+        .join(" ");
+      const constStr = Math.abs(term.constant) < 1e-10 && kParts ? "" : fmt(term.constant);
+      const rhs = constStr + (kParts ? " " + kParts : "") || "0";
+      return `x_{${term.varIndex + 1}} = ${rhs.trim()}`;
+    });
+
+    steps.push({
+      descriptionZh: `通解（以任意數 ${kNames.join(", ")} 表示）`,
+      descriptionEn: `General solution (expressed using arbitrary parameter${kCount > 1 ? "s" : ""} ${kNames.join(", ")})`,
+      matrix: aug.map((r) => [...r]),
+      latex: genLatexParts.join(",\\quad "),
+    });
+
+    return { type: "infinite", steps, freeVariables: freeVars, generalSolution };
   }
 
   // Unique solution — back substitution

@@ -73,6 +73,26 @@ type Translations = {
   labelInput: string;
   labelOutput: string;
   labelStepByStep: string;
+  // Practice mode
+  practiceMode: string;
+  calcMode: string;
+  newQuestion: string;
+  checkAnswer: string;
+  correct: string;
+  incorrect: string;
+  tryAgain: string;
+  showAnswer: string;
+  yourAnswer: string;
+  practiceQuestion: string;
+  enterMatrixAnswer: string;
+  enterScalarAnswer: string;
+  enterVectorAnswer: string;
+  enterEigenvalues: string;
+  practiceHintMatrix: string;
+  practiceHintVector: string;
+  practiceHintEigen: string;
+  practiceCorrectMsg: string;
+  practiceIncorrectMsg: string;
   // Misc
   language: string;
   darkMode: string;
@@ -143,9 +163,28 @@ const zh: Translations = {
   labelInput: "輸入",
   labelOutput: "輸出",
   labelStepByStep: "逐步解說",
+  practiceMode: "練習模式",
+  calcMode: "計算模式",
+  newQuestion: "新題目",
+  checkAnswer: "核對答案",
+  correct: "正確！",
+  incorrect: "错誤，再試一次！",
+  tryAgain: "再試一次",
+  showAnswer: "顯示答案",
+  yourAnswer: "你的答案",
+  practiceQuestion: "練習題目",
+  enterMatrixAnswer: "輸入矩陣（用空格分隔元素，分號分隔行），例：1 2; 3 4",
+  enterScalarAnswer: "輸入數字答案",
+  enterVectorAnswer: "輸入向量（用空格分隔），例：1 2 3",
+  enterEigenvalues: "輸入特徵値（用空格分隔，由小到大排列），例：-2 3",
+  practiceHintMatrix: "提示：輸入矩陣答案，用空格分隔元素，分號分隔行。例：1 2; 3 4",
+  practiceHintVector: "提示：輸入向量分量，用空格分隔。例：1 -2 3",
+  practiceHintEigen: "提示：輸入特徵値，由小到大排列，用空格分隔。例：-2 3",
+  practiceCorrectMsg: "太棒了！答案正確。",
+  practiceIncorrectMsg: "答案不對，請再試一次。",
   language: "語言",
   darkMode: "深色模式",
-  lightMode: "淺色模式",
+  lightMode: "淡色模式",
 };
 
 const en: Translations = {
@@ -212,6 +251,25 @@ const en: Translations = {
   labelInput: "Input",
   labelOutput: "Output",
   labelStepByStep: "Step-by-Step",
+  practiceMode: "Practice Mode",
+  calcMode: "Calculator",
+  newQuestion: "New Question",
+  checkAnswer: "Check Answer",
+  correct: "Correct!",
+  incorrect: "Incorrect, try again!",
+  tryAgain: "Try Again",
+  showAnswer: "Show Answer",
+  yourAnswer: "Your Answer",
+  practiceQuestion: "Practice Question",
+  enterMatrixAnswer: "Enter matrix (space-separated elements, semicolons for rows), e.g. 1 2; 3 4",
+  enterScalarAnswer: "Enter numeric answer",
+  enterVectorAnswer: "Enter vector components (space-separated), e.g. 1 2 3",
+  enterEigenvalues: "Enter eigenvalues (space-separated, sorted ascending), e.g. -2 3",
+  practiceHintMatrix: "Hint: Enter matrix answer with spaces between elements and semicolons between rows. E.g. 1 2; 3 4",
+  practiceHintVector: "Hint: Enter vector components separated by spaces. E.g. 1 -2 3",
+  practiceHintEigen: "Hint: Enter eigenvalues sorted from smallest to largest, separated by spaces. E.g. -2 3",
+  practiceCorrectMsg: "Excellent! Your answer is correct.",
+  practiceIncorrectMsg: "Incorrect answer. Please try again.",
   language: "Language",
   darkMode: "Dark Mode",
   lightMode: "Light Mode",

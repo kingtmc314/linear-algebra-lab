@@ -54,3 +54,35 @@
 - [x] 更新知識點庫加入特徵值知識點（3 個新條目）
 - [x] 寫 eigenMath 單元測試（14 個測試，全部通過）
 - [x] 所有 20 個測試通過
+
+## Phase 8: 四項新功能
+
+### 8a: 核心數學庫修復
+- [x] matrixMath.ts：逆矩陣計算前先計算行列式，若 det=0 則返回奇異矩陣錯誤（中英雙語）
+- [x] linearSystem.ts：高斯消去法完成後識別自由變量，以 k, k₁, k₂ 表示通解
+- [x] vectorMath.ts：叉積（Cross Product）計算已實作，含逐步推導
+
+### 8b: 練習題生成器
+- [x] 建立 practiceGenerator.ts：矩陣、聯立方程、向量、特徵值各模組的隨機題目生成函數
+- [x] 包含答案比對函數（浮點誤差容忍 tolerance = 1e-6）
+- [x] 更新 LanguageContext.tsx：加入練習題相關翻譯鍵（practiceMode, calcMode, newQuestion, checkAnswer 等）
+
+### 8c: 各頁面練習題 UI
+- [x] MatrixPage.tsx：新增「練習模式」Tab，隨機出題 + 學生輸入 + 即時核對
+- [x] LinearSystemPage.tsx：新增練習模式，並顯示 k 通解
+- [x] VectorPage.tsx：新增練習模式，含叉積題型
+- [x] EigenPage.tsx：新增練習模式，特徵值題型
+
+### 8d: 測試與部署
+- [x] 所有測試通過（20 tests）
+- [ ] 儲存檢查點並發佈
+
+## Phase 9: 三項新功能擴充
+
+- [x] 矩陣計算支援兩個或以上矩陣（多矩陣鏈式運算 A × B × C × ...）
+- [x] 新增可對角線化矩陣 n 次方計算（diagonalization + A^n，含詳細步驟）
+- [x] 所有矩陣 n 次方結果以精確值表示（整數/分數/指數形式，不用近似小數）
+- [x] 更新 LanguageContext.tsx：加入多矩陣及 n 次方相關翻譯
+- [x] 更新 MatrixPage.tsx：多矩陣輸入 UI（動態新增/刪除矩陣）
+- [x] 新增 MatrixPowerPage.tsx：可對角線化矩陣 n 次方計算頁面
+- [x] 更新 App.tsx 路由及側邊欄

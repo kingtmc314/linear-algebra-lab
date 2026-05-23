@@ -1,11 +1,14 @@
 // LinearSystemPage — Solve systems of linear equations using matrix methods
 // Academic Precision Design: augmented matrix display, step-by-step Gaussian elimination
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import StepDisplay from "@/components/StepDisplay";
 import KatexRenderer from "@/components/KatexRenderer";
-import { solveLinearSystem } from "@/lib/linearSystem";
+import PracticePanel from "@/components/PracticePanel";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { solveLinearSystem, type GeneralSolutionTerm } from "@/lib/linearSystem";
 import { matrixToLatex, fmt } from "@/lib/matrixMath";
+import { generateLinearSystemQuestion } from "@/lib/practiceGenerator";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, CheckCircle2, Infinity, XCircle } from "lucide-react";
 
@@ -13,8 +16,36 @@ function makeGrid(rows: number, cols: number): number[][] {
   return Array.from({ length: rows }, () => Array(cols).fill(0));
 }
 
+// Helper: build k parameter names
+function buildKNames(kCount: number): string {
+  if (kCount === 1) return "k";
+  return Array.from({ length: kCount }, (_, i) => `k_{${i+1}}`).join(", ");
+}
+
+// Helper: build LaTeX for general solution from GeneralSolutionTerm[]
+function buildGeneralSolutionLatex(terms: GeneralSolutionTerm[], kCount: number): string {
+  const kNames = kCount === 1 ? ["k"] : Array.from({ length: kCount }, (_, i) => `k_{${i+1}}`);
+  const parts = terms.map((term) => {
+    const kParts = term.kCoeffs
+      .map((c, i) => {
+        if (Math.abs(c) < 1e-10) return "";
+        const sign = c > 0 ? "+" : "-";
+        const absC = Math.abs(c);
+        const coefStr = Math.abs(absC - 1) < 1e-10 ? "" : fmt(absC);
+        return `${sign} ${coefStr}${kNames[i]}`;
+      })
+      .filter(Boolean)
+      .join(" ");
+    const constStr = Math.abs(term.constant) < 1e-10 && kParts ? "" : fmt(term.constant);
+    const rhs = (constStr + (kParts ? " " + kParts : "")).trim() || "0";
+    return `x_{${term.varIndex + 1}} = ${rhs}`;
+  });
+  return parts.join(",\\quad ");
+}
+
 export default function LinearSystemPage() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const genQuestion = useCallback(() => generateLinearSystemQuestion(lang), [lang]);
 
   const [numEq, setNumEq] = useState(2);
   const [numVar, setNumVar] = useState(2);
@@ -96,6 +127,18 @@ export default function LinearSystemPage() {
           {numEq} {t.numEquations.toLowerCase()} · {numVar} {t.numVariables.toLowerCase()}
         </p>
       </div>
+
+      <Tabs defaultValue="calc">
+        <TabsList>
+          <TabsTrigger value="calc">{t.calcMode}</TabsTrigger>
+          <TabsTrigger value="practice">{t.practiceMode}</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="practice" className="mt-4">
+          <PracticePanel generateQuestion={genQuestion} moduleLabel={lang === "zh" ? "方程組練習" : "Linear System Practice"} />
+        </TabsContent>
+
+        <TabsContent value="calc" className="mt-4">
 
       {/* Dimension selector */}
       <div className="flex flex-wrap gap-4 p-4 rounded-lg border border-border bg-card">
@@ -255,12 +298,34 @@ export default function LinearSystemPage() {
             </div>
           )}
 
+          {/* Infinite solutions: general solution with k parameters */}
+          {result.type === "infinite" && result.generalSolution && (
+            <div className="p-4 rounded-lg border border-yellow-500/30 bg-yellow-500/5 space-y-3">
+              <p className="text-xs font-semibold font-mono uppercase tracking-wide text-yellow-700 dark:text-yellow-400">
+                {lang === "zh" ? "通解（以任意數 k 表示）" : "General Solution (parametric form)"}
+              </p>
+              <div className="overflow-x-auto">
+                <KatexRenderer
+                  latex={buildGeneralSolutionLatex(result.generalSolution, result.freeVariables?.length ?? 1)}
+                  displayMode={true}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {lang === "zh"
+                  ? `其中 ${buildKNames(result.freeVariables?.length ?? 1)} 為任意實數`
+                  : `where ${buildKNames(result.freeVariables?.length ?? 1)} ∈ ℝ (arbitrary real number${(result.freeVariables?.length ?? 1) > 1 ? "s" : ""})`}
+              </p>
+            </div>
+          )}
+
           {/* Steps */}
           {result.steps && result.steps.length > 0 && (
             <StepDisplay steps={result.steps} title={t.steps} />
           )}
         </div>
       )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

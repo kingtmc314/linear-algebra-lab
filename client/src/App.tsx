@@ -14,8 +14,9 @@ import VectorPage from "./pages/VectorPage";
 import KnowledgePage from "./pages/KnowledgePage";
 import DocumentsPage from "./pages/DocumentsPage";
 import EigenPage from "./pages/EigenPage";
+import MatrixPowerPage from "./pages/MatrixPowerPage";
 import { useState } from "react";
-import { Grid3X3, Sigma, ArrowRight, Menu, X, Globe, BookOpen, FileText, LogIn, LogOut, User, Sparkles } from "lucide-react";
+import { Grid3X3, Sigma, ArrowRight, Menu, X, Globe, BookOpen, FileText, LogIn, LogOut, User, Sparkles, Zap } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
@@ -39,6 +40,7 @@ function Sidebar({ mobile, onClose }: { mobile?: boolean; onClose?: () => void }
     { path: "/system", label: t.navLinearSystem, icon: Sigma },
     { path: "/vector", label: t.navVector, icon: ArrowRight },
     { path: "/eigen", label: t.navEigen, icon: Sparkles },
+    { path: "/matrix-power", label: lang === "zh" ? "矩陣 n 次方" : "Matrix Power", icon: Zap },
     { path: "/knowledge", label: t.navKnowledge, icon: BookOpen },
     { path: "/documents", label: t.navDocuments, icon: FileText },
   ];
@@ -79,7 +81,7 @@ function Sidebar({ mobile, onClose }: { mobile?: boolean; onClose?: () => void }
         <p className="px-2 pb-1 text-xs font-semibold uppercase tracking-wider opacity-40" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
           {lang === "zh" ? "計算器" : "Calculators"}
         </p>
-        {navItems.slice(0, 4).map((item) => {
+        {navItems.slice(0, 5).map((item) => {
           const Icon = item.icon;
           const isActive = location === item.path;
           return (
@@ -98,7 +100,7 @@ function Sidebar({ mobile, onClose }: { mobile?: boolean; onClose?: () => void }
         <p className="px-2 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider opacity-40" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
           {lang === "zh" ? "學習資源" : "Resources"}
         </p>
-        {navItems.slice(4).map((item) => {
+        {navItems.slice(5).map((item) => {
           const Icon = item.icon;
           const isActive = location === item.path;
           return (
@@ -198,6 +200,7 @@ function Layout() {
     "/system": t.navLinearSystem,
     "/vector": t.navVector,
     "/eigen": t.navEigen,
+    "/matrix-power": lang === "zh" ? "矩陣 n 次方" : "Matrix Power A^n",
     "/knowledge": t.navKnowledge,
     "/documents": t.navDocuments,
   };
@@ -261,6 +264,7 @@ function Layout() {
               {() => <KnowledgePage lang={lang} />}
             </Route>
             <Route path="/eigen" component={EigenPage} />
+            <Route path="/matrix-power" component={MatrixPowerPage} />
             <Route path="/documents">
               {() => <DocumentsPage lang={lang} />}
             </Route>

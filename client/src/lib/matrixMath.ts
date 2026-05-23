@@ -418,10 +418,41 @@ export function matInverse(A: Matrix): MatrixResult {
     return { steps, error: "square_required" };
   }
 
+  // ── Step 0: Check determinant first (singular matrix guard) ──────────────
   steps.push({
-    descriptionZh: `計算 ${n}×${n} 方陣的逆矩陣，使用高斯-喬登消去法`,
-    descriptionEn: `Computing inverse of ${n}×${n} matrix using Gauss-Jordan elimination`,
+    descriptionZh: `計算 ${n}×${n} 方陣的逆矩陣，首先計算行列式以判斷矩陣是否可逆`,
+    descriptionEn: `Computing inverse of ${n}×${n} matrix — first check determinant to verify invertibility`,
     latex: `A = ${matrixToLatex(A)}`,
+  });
+
+  const det = computeDetRaw(A);
+  if (n === 2) {
+    steps.push({
+      descriptionZh: `計算行列式：det(A) = (${fmt(A[0][0])})(${fmt(A[1][1])}) − (${fmt(A[0][1])})(${fmt(A[1][0])}) = ${fmt(det)}`,
+      descriptionEn: `Compute determinant: det(A) = (${fmt(A[0][0])})(${fmt(A[1][1])}) − (${fmt(A[0][1])})(${fmt(A[1][0])}) = ${fmt(det)}`,
+      latex: `\\det(A) = (${fmt(A[0][0])})(${fmt(A[1][1])}) - (${fmt(A[0][1])})(${fmt(A[1][0])}) = ${fmt(det)}`,
+    });
+  } else {
+    steps.push({
+      descriptionZh: `計算行列式（餘因子展開）：det(A) = ${fmt(det)}`,
+      descriptionEn: `Compute determinant (cofactor expansion): det(A) = ${fmt(det)}`,
+      latex: `\\det(A) = ${fmt(det)}`,
+    });
+  }
+
+  if (Math.abs(det) < 1e-10) {
+    steps.push({
+      descriptionZh: `det(A) = ${fmt(det)} = 0，矩陣為奇異矩陣（Singular Matrix）`,
+      descriptionEn: `det(A) = ${fmt(det)} = 0 — the matrix is singular (Singular Matrix)`,
+      latex: `\\det(A) = 0 \\Rightarrow A \\text{ is singular — inverse does not exist}`,
+    });
+    return { steps, error: "singular" };
+  }
+
+  steps.push({
+    descriptionZh: `det(A) = ${fmt(det)} ≠ 0，矩陣可逆，繼續使用高斯-喬登消去法求逆矩陣`,
+    descriptionEn: `det(A) = ${fmt(det)} ≠ 0 — matrix is invertible; proceed with Gauss-Jordan elimination`,
+    latex: `\\det(A) = ${fmt(det)} \\neq 0 \\Rightarrow A^{-1} \\text{ exists}`,
   });
 
   steps.push({

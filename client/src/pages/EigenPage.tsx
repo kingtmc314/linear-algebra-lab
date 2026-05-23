@@ -1,11 +1,14 @@
 // EigenPage — Eigenvalue & Eigenvector Calculator
 // Academic Precision Design: matches existing app style
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import MatrixInput, { DimSelector } from "@/components/MatrixInput";
 import KatexRenderer from "@/components/KatexRenderer";
+import PracticePanel from "@/components/PracticePanel";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { computeEigen, type EigenResult } from "@/lib/eigenMath";
 import { zeroMatrix } from "@/lib/matrixMath";
+import { generateEigenQuestion } from "@/lib/practiceGenerator";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
 
@@ -83,6 +86,7 @@ function EigenStepDisplay({ result, lang }: { result: EigenResult; lang: "zh" | 
 
 export default function EigenPage() {
   const { t, lang } = useLanguage();
+  const genQuestion = useCallback(() => generateEigenQuestion(lang), [lang]);
 
   const [size, setSize] = useState<2 | 3>(2);
   const [matrix, setMatrix] = useState<Matrix>(zeroMatrix(2, 2));
@@ -142,6 +146,18 @@ export default function EigenPage() {
         </h1>
         <p className="text-sm text-muted-foreground mt-1">{pageSubtitle}</p>
       </div>
+
+      <Tabs defaultValue="calc">
+        <TabsList>
+          <TabsTrigger value="calc">{t.calcMode}</TabsTrigger>
+          <TabsTrigger value="practice">{t.practiceMode}</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="practice" className="mt-4">
+          <PracticePanel generateQuestion={genQuestion} moduleLabel={lang === "zh" ? "特徵值練習" : "Eigenvalue Practice"} />
+        </TabsContent>
+
+        <TabsContent value="calc" className="mt-4">
 
       {/* Matrix size selector */}
       <div className="p-4 rounded-lg border border-border bg-card space-y-4">
@@ -285,6 +301,8 @@ export default function EigenPage() {
             : "This tool supports 2×2 and 3×3 real square matrices and shows every derivation step."}
         </p>
       </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

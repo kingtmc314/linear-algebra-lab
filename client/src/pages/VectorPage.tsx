@@ -1,6 +1,6 @@
 // VectorPage — 2D and 3D Vector Calculator with Visualization
 // Academic Precision Design: split input/result, canvas visualization
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import StepDisplay from "@/components/StepDisplay";
 import KatexRenderer from "@/components/KatexRenderer";
@@ -13,6 +13,9 @@ import {
 import { fmt } from "@/lib/matrixMath";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
+import PracticePanel from "@/components/PracticePanel";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { generateRandomVectorQuestion } from "@/lib/practiceGenerator";
 
 type Dim = "2d" | "3d";
 type VecOp = "add" | "sub" | "dot" | "cross" | "mag" | "angle" | "normalize";
@@ -23,7 +26,8 @@ const OPS_3D: VecOp[] = ["add", "sub", "dot", "cross", "mag", "angle", "normaliz
 const NEEDS_B: VecOp[] = ["add", "sub", "dot", "cross", "angle"];
 
 export default function VectorPage() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const genQuestion = useCallback(() => generateRandomVectorQuestion(lang), [lang]);
 
   const [dim, setDim] = useState<Dim>("2d");
   const [op, setOp] = useState<VecOp>("add");
@@ -131,6 +135,18 @@ export default function VectorPage() {
           {dim === "2d" ? t.vector2D : t.vector3D} · {opLabels[op]}
         </p>
       </div>
+
+      <Tabs defaultValue="calc">
+        <TabsList>
+          <TabsTrigger value="calc">{t.calcMode}</TabsTrigger>
+          <TabsTrigger value="practice">{t.practiceMode}</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="practice" className="mt-4">
+          <PracticePanel generateQuestion={genQuestion} moduleLabel={lang === "zh" ? "向量練習" : "Vector Practice"} />
+        </TabsContent>
+
+        <TabsContent value="calc" className="mt-4">
 
       {/* Dimension toggle */}
       <div className="flex gap-2">
@@ -320,6 +336,8 @@ export default function VectorPage() {
           )}
         </div>
       )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
