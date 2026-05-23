@@ -106,3 +106,13 @@
 - [x] 直接編譯並推送至 gh-pages 分支（靜態檔案）
 - [x] GitHub Pages 部署建置中
 - [x] 儲存檢查點
+
+## Phase 12: 向量計算頁面互動式 Plotly 視覺化
+
+- [x] 安裝 plotly.js-dist-min 及 @types/plotly.js
+- [x] 建立 VectorPlot2D.tsx：Plotly 互動 2D 圖表（向量箭頭、平行四邊形、角度弧線、座標標籤、懸停提示）
+- [x] 建立 VectorPlot3D.tsx：Plotly 互動 3D 圖表（3D 箭頭、叉積平行四邊形面積、右手定則標示、可旋轉縮放）
+- [x] 更新 VectorPage.tsx：以新 Plotly 元件取代舊 Canvas/SVG 視覺化
+- [x] 每個運算新增幾何意義說明提示（中英雙語）
+- [x] 視覺化標題加入「可縮放・可拖曳」提示
+- [x] TypeScript 無錯誤，所有 20 個測試通過
