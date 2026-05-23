@@ -13,8 +13,10 @@ interface Vec3D {
 
 interface VectorPlot3DProps {
   vectors: Vec3D[];
-  op?: string; // "add" | "sub" | "cross" | "dot" | "angle" | "normalize" | "mag"
+  op?: string; // "add" | "sub" | "cross" | "dot" | "angle" | "normalize" | "mag" | "projection"
   lang?: "zh" | "en";
+  projVector?: number[];
+  perpVector?: number[];
 }
 
 function fmt(n: number): string {
@@ -110,7 +112,7 @@ function buildArrow(
   return [shaft, cone];
 }
 
-export default function VectorPlot3D({ vectors, op = "add", lang = "zh" }: VectorPlot3DProps) {
+export default function VectorPlot3D({ vectors, op = "add", lang = "zh", projVector, perpVector }: VectorPlot3DProps) {
   const divRef = useRef<HTMLDivElement>(null);
 
   const vecA = vectors.find((v) => v.label === "a");
@@ -122,7 +124,8 @@ export default function VectorPlot3D({ vectors, op = "add", lang = "zh" }: Vecto
     const allVecs = [vecA, vecB, vecR].filter(Boolean) as Vec3D[];
     const maxCoord = Math.max(
       1,
-      ...allVecs.flatMap((v) => [Math.abs(v.x), Math.abs(v.y), Math.abs(v.z)])
+      ...allVecs.flatMap((v) => [Math.abs(v.x), Math.abs(v.y), Math.abs(v.z)]),
+      ...(projVector ? [Math.abs(projVector[0] ?? 0), Math.abs(projVector[1] ?? 0), Math.abs(projVector[2] ?? 0)] : []),
     );
     const range: [number, number] = [-(maxCoord * 0.15), maxCoord * 1.5 + 0.5];
 
@@ -176,6 +179,49 @@ export default function VectorPlot3D({ vectors, op = "add", lang = "zh" }: Vecto
         font: { color: "#6366F1", size: 11, family: "IBM Plex Mono, monospace" },
         bgcolor: "rgba(99,102,241,0.12)",
       });
+    }
+
+    // ── Projection visualization (3D) ────────────────────────────────────
+    if (op === "projection" && vecA && vecB && projVector && perpVector) {
+      const px = projVector[0] ?? 0, py = projVector[1] ?? 0, pz = projVector[2] ?? 0;
+      const bMag = Math.sqrt(vecB.x ** 2 + vecB.y ** 2 + vecB.z ** 2);
+      if (bMag > 0) {
+        // Projection vector (green arrow from origin to foot)
+        data.push(...buildArrow(0, 0, 0, px, py, pz, "#16A34A"));
+        // Perpendicular drop line (amber dashed)
+        data.push({
+          type: "scatter3d", mode: "lines",
+          x: [vecA.x, px], y: [vecA.y, py], z: [vecA.z, pz],
+          line: { color: "#F59E0B", width: 3, dash: "dash" },
+          hoverinfo: "text",
+          hovertext: lang === "zh" ? "垂直分量 a⊥" : "Perpendicular component a⊥",
+          showlegend: true,
+          name: lang === "zh" ? "垂直線 a⊥" : "Perp. line a⊥",
+        });
+        // Right angle marker at foot
+        const bUx = vecB.x / bMag, bUy = vecB.y / bMag, bUz = vecB.z / bMag;
+        const dLen = Math.sqrt((vecA.x - px) ** 2 + (vecA.y - py) ** 2 + (vecA.z - pz) ** 2);
+        if (dLen > 1e-6) {
+          const dUx = (vecA.x - px) / dLen, dUy = (vecA.y - py) / dLen, dUz = (vecA.z - pz) / dLen;
+          const sqS = Math.min(maxCoord * 0.06, 0.25);
+          data.push({
+            type: "scatter3d", mode: "lines",
+            x: [px + dUx * sqS, px + dUx * sqS + bUx * sqS, px + bUx * sqS],
+            y: [py + dUy * sqS, py + dUy * sqS + bUy * sqS, py + bUy * sqS],
+            z: [pz + dUz * sqS, pz + dUz * sqS + bUz * sqS, pz + bUz * sqS],
+            line: { color: "#F59E0B", width: 1.5 },
+            hoverinfo: "skip", showlegend: false, name: "",
+          });
+        }
+        // Labels
+        anns.push({
+          x: px * 0.5, y: py * 0.5, z: pz * 0.5,
+          text: `<b>proj<sub>b</sub>a</b>`,
+          showarrow: false,
+          font: { color: "#16A34A", size: 11, family: "IBM Plex Serif, serif" },
+          bgcolor: "rgba(22,163,74,0.08)",
+        });
+      }
     }
 
     // ── Tip-to-tail for add/sub ────────────────────────────────────────────
@@ -294,7 +340,7 @@ export default function VectorPlot3D({ vectors, op = "add", lang = "zh" }: Vecto
     }
 
     return { plotData: data, annotations3d: anns, axisRange: range };
-  }, [vectors, op, lang, vecA, vecB, vecR]);
+  }, [vectors, op, lang, vecA, vecB, vecR, projVector, perpVector]);
 
   useEffect(() => {
     if (!divRef.current) return;

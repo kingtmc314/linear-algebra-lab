@@ -12,8 +12,10 @@ interface Vec2D {
 
 interface VectorPlot2DProps {
   vectors: Vec2D[];
-  op?: string; // "add" | "sub" | "dot" | "angle" | "normalize" | "mag"
+  op?: string; // "add" | "sub" | "dot" | "angle" | "normalize" | "mag" | "projection"
   lang?: "zh" | "en";
+  projVector?: number[];
+  perpVector?: number[];
 }
 
 function fmt(n: number): string {
@@ -21,7 +23,7 @@ function fmt(n: number): string {
   return Number.isInteger(r) ? String(r) : r.toString();
 }
 
-export default function VectorPlot2D({ vectors, op = "add", lang = "zh" }: VectorPlot2DProps) {
+export default function VectorPlot2D({ vectors, op = "add", lang = "zh", projVector, perpVector }: VectorPlot2DProps) {
   const divRef = useRef<HTMLDivElement>(null);
 
   const vecA = vectors.find((v) => v.label === "a");
@@ -32,7 +34,8 @@ export default function VectorPlot2D({ vectors, op = "add", lang = "zh" }: Vecto
     const allVecs = [vecA, vecB, vecR].filter(Boolean) as Vec2D[];
     const maxCoord = Math.max(
       1,
-      ...allVecs.flatMap((v) => [Math.abs(v.x), Math.abs(v.y)])
+      ...allVecs.flatMap((v) => [Math.abs(v.x), Math.abs(v.y)]),
+      ...(projVector ? [Math.abs(projVector[0] ?? 0), Math.abs(projVector[1] ?? 0)] : []),
     );
     const pad = maxCoord * 0.35 + 1;
     const range: [number, number] = [-(maxCoord + pad), maxCoord + pad];
@@ -127,6 +130,63 @@ export default function VectorPlot2D({ vectors, op = "add", lang = "zh" }: Vecto
       }
     }
 
+    // ── Projection visualization ───────────────────────────────────────────
+    if (op === "projection" && vecA && vecB && projVector && perpVector) {
+      const px = projVector[0], py = projVector[1];
+      const bMag = Math.sqrt(vecB.x ** 2 + vecB.y ** 2);
+      if (bMag > 0) {
+        // Projection vector arrow (green, from origin to proj foot)
+        anns.push({
+          x: px, y: py, ax: 0, ay: 0,
+          xref: "x", yref: "y", axref: "x", ayref: "y",
+          showarrow: true, arrowhead: 2, arrowsize: 1.3, arrowwidth: 2.2,
+          arrowcolor: "#16A34A", text: "",
+        });
+        // Perpendicular drop line: from tip of a to foot of projection
+        data.push({
+          type: "scatter", mode: "lines",
+          x: [vecA.x, px], y: [vecA.y, py],
+          line: { color: "#F59E0B", width: 1.8, dash: "dash" },
+          hoverinfo: "text",
+          hovertext: lang === "zh" ? "垂直分量 a⊥" : "Perpendicular component a⊥",
+          showlegend: true,
+          name: lang === "zh" ? "垂直線 a⊥" : "Perp. line a⊥",
+        });
+        // Right angle marker at foot of projection
+        const bUx = vecB.x / bMag, bUy = vecB.y / bMag;
+        const perpUx = -bUy, perpUy = bUx;
+        const sqSize = Math.min(maxCoord * 0.06, 0.3);
+        const sq = [
+          [px + perpUx * sqSize, py + perpUy * sqSize],
+          [px + perpUx * sqSize + bUx * sqSize, py + perpUy * sqSize + bUy * sqSize],
+          [px + bUx * sqSize, py + bUy * sqSize],
+        ];
+        data.push({
+          type: "scatter", mode: "lines",
+          x: sq.map((p) => p[0]), y: sq.map((p) => p[1]),
+          line: { color: "#F59E0B", width: 1.2 },
+          hoverinfo: "skip", showlegend: false, name: "",
+        });
+        // Label: proj_b(a)
+        data.push({
+          type: "scatter", mode: "text",
+          x: [px * 0.5], y: [py * 0.5],
+          text: [`<b>proj<sub>b</sub>a</b>`],
+          textfont: { color: "#16A34A", size: 11, family: "IBM Plex Serif, serif" },
+          hoverinfo: "skip", showlegend: false, name: "",
+        });
+        // Label: a⊥
+        data.push({
+          type: "scatter", mode: "text",
+          x: [(vecA.x + px) / 2 + perpUx * 0.3],
+          y: [(vecA.y + py) / 2 + perpUy * 0.3],
+          text: [`<b>a⊥</b>`],
+          textfont: { color: "#F59E0B", size: 11, family: "IBM Plex Serif, serif" },
+          hoverinfo: "skip", showlegend: false, name: "",
+        });
+      }
+    }
+
     // ── Arrow annotations for main vectors ────────────────────────────────
     allVecs.forEach((v) => {
       if (v.x === 0 && v.y === 0) return;
@@ -189,7 +249,7 @@ export default function VectorPlot2D({ vectors, op = "add", lang = "zh" }: Vecto
     });
 
     return { plotData: data, annotations: anns, axisRange: range };
-  }, [vectors, op, lang, vecA, vecB, vecR]);
+  }, [vectors, op, lang, vecA, vecB, vecR, projVector, perpVector]);
 
   useEffect(() => {
     if (!divRef.current) return;

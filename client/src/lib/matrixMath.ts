@@ -60,6 +60,80 @@ function toFraction(x: number): string | null {
   return null;
 }
 
+/**
+ * Render a square-root expression in exact LaTeX form.
+ * e.g. sqrtExact(5) => "\\sqrt{5}", sqrtExact(4) => "2", sqrtExact(12) => "2\\sqrt{3}"
+ */
+export function sqrtExact(n: number): string {
+  if (n < 0) return `\\sqrt{${fmt(n)}}`;
+  if (Math.abs(n) < 1e-10) return "0";
+  const sqrtN = Math.sqrt(n);
+  if (Math.abs(sqrtN - Math.round(sqrtN)) < 1e-8) return fmt(Math.round(sqrtN));
+  const nInt = Math.round(n);
+  if (Math.abs(nInt - n) < 1e-8 && nInt > 0) {
+    for (let k = Math.floor(Math.sqrt(nInt)); k >= 2; k--) {
+      if (nInt % (k * k) === 0) {
+        const inner = nInt / (k * k);
+        if (inner === 1) return `${k}`;
+        return `${k}\\sqrt{${inner}}`;
+      }
+    }
+    return `\\sqrt{${nInt}}`;
+  }
+  // Non-integer: try fraction under sqrt e.g. sqrt(1/2) => \frac{\sqrt{2}}{2}
+  for (let d = 2; d <= 60; d++) {
+    const num = Math.round(n * d * d);
+    if (Math.abs(num / (d * d) - n) < 1e-8 && num > 0) {
+      const inner = num;
+      const sqrtInner = Math.sqrt(inner);
+      if (Math.abs(sqrtInner - Math.round(sqrtInner)) < 1e-8) {
+        return `\\frac{${Math.round(sqrtInner)}}{${d}}`;
+      }
+      for (let k = Math.floor(Math.sqrt(inner)); k >= 2; k--) {
+        if (inner % (k * k) === 0) {
+          const rem = inner / (k * k);
+          if (rem === 1) return `\\frac{${k}}{${d}}`;
+          return `\\frac{${k}\\sqrt{${rem}}}{${d}}`;
+        }
+      }
+      return `\\frac{\\sqrt{${inner}}}{${d}}`;
+    }
+  }
+  return fmt(sqrtN);
+}
+
+/**
+ * Render an angle in exact form (degrees and radians).
+ * Returns { deg: "60^\\circ", rad: "\\frac{\\pi}{3}" }
+ */
+export function angleExact(deg: number): { deg: string; rad: string } {
+  const tol = 1e-6;
+  const exactAngles: { d: number; degStr: string; radStr: string }[] = [
+    { d: 0,   degStr: "0^\\circ",          radStr: "0" },
+    { d: 30,  degStr: "30^\\circ",         radStr: "\\frac{\\pi}{6}" },
+    { d: 45,  degStr: "45^\\circ",         radStr: "\\frac{\\pi}{4}" },
+    { d: 60,  degStr: "60^\\circ",         radStr: "\\frac{\\pi}{3}" },
+    { d: 90,  degStr: "90^\\circ",         radStr: "\\frac{\\pi}{2}" },
+    { d: 120, degStr: "120^\\circ",        radStr: "\\frac{2\\pi}{3}" },
+    { d: 135, degStr: "135^\\circ",        radStr: "\\frac{3\\pi}{4}" },
+    { d: 150, degStr: "150^\\circ",        radStr: "\\frac{5\\pi}{6}" },
+    { d: 180, degStr: "180^\\circ",        radStr: "\\pi" },
+  ];
+  for (const { d, degStr, radStr } of exactAngles) {
+    if (Math.abs(deg - d) < tol) return { deg: degStr, rad: radStr };
+  }
+  const rad = (deg * Math.PI) / 180;
+  for (let d = 1; d <= 12; d++) {
+    for (let n = 1; n <= 2 * d; n++) {
+      if (Math.abs(rad - (n * Math.PI) / d) < tol) {
+        const radStr = n === 1 ? `\\frac{\\pi}{${d}}` : `\\frac{${n}\\pi}{${d}}`;
+        return { deg: `${fmt(deg)}^\\circ`, rad: radStr };
+      }
+    }
+  }
+  return { deg: `${fmt(deg)}^\\circ`, rad: `${fmt(rad)}` };
+}
+
 /** Convert a matrix to LaTeX bmatrix */
 export function matrixToLatex(M: Matrix, bracket: "b" | "p" | "v" = "b"): string {
   const rows = M.map((row) => row.map((v) => fmt(v)).join(" & ")).join(" \\\\ ");

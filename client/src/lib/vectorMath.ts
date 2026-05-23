@@ -3,7 +3,7 @@
 // Each operation shows component-wise calculation steps
 // ============================================================
 
-import { fmt } from "./matrixMath";
+import { fmt, sqrtExact, angleExact } from "./matrixMath";
 
 export type Vec2 = [number, number];
 export type Vec3 = [number, number, number];
@@ -253,10 +253,11 @@ export function vecMagnitude(a: VecN): VectorResult {
     latex: `${squaredLatex} = ${fmt(sumSq)}`,
   });
 
+  const magExact = sqrtExact(sumSq);
   steps.push({
-    descriptionZh: "取平方根得模",
-    descriptionEn: "Take square root to get magnitude",
-    latex: `|\\mathbf{a}| = \\sqrt{${fmt(sumSq)}} = ${fmt(mag)}`,
+    descriptionZh: "取平方根得模（精確值）",
+    descriptionEn: "Take square root to get exact magnitude",
+    latex: `|\\mathbf{a}| = \\sqrt{${fmt(sumSq)}} = ${magExact}`,
     value: mag,
   });
 
@@ -295,34 +296,39 @@ export function vecAngle(a: VecN, b: VecN): VectorResult {
     latex: `\\mathbf{a} \\cdot \\mathbf{b} = ${dotTerms} = ${fmt(dot)}`,
   });
 
+  const sumSqA = a.reduce((s, v) => s + v * v, 0);
+  const sumSqB = b.reduce((s, v) => s + v * v, 0);
   const sqA = a.map((v) => `(${fmt(v)})^2`).join("+");
   const sqB = b.map((v) => `(${fmt(v)})^2`).join("+");
+  const magAExact = sqrtExact(sumSqA);
+  const magBExact = sqrtExact(sumSqB);
   steps.push({
-    descriptionZh: `計算 |a| = √(${sqA}) = ${fmt(magA)}`,
-    descriptionEn: `Compute |a| = √(${sqA}) = ${fmt(magA)}`,
-    latex: `|\\mathbf{a}| = \\sqrt{${sqA}} = ${fmt(magA)}`,
+    descriptionZh: `計算 |a| = √(${sqA}) = ${magAExact}`,
+    descriptionEn: `Compute |a| = √(${sqA}) = ${magAExact}`,
+    latex: `|\\mathbf{a}| = \\sqrt{${sqA}} = ${magAExact}`,
   });
 
   steps.push({
-    descriptionZh: `計算 |b| = √(${sqB}) = ${fmt(magB)}`,
-    descriptionEn: `Compute |b| = √(${sqB}) = ${fmt(magB)}`,
-    latex: `|\\mathbf{b}| = \\sqrt{${sqB}} = ${fmt(magB)}`,
+    descriptionZh: `計算 |b| = √(${sqB}) = ${magBExact}`,
+    descriptionEn: `Compute |b| = √(${sqB}) = ${magBExact}`,
+    latex: `|\\mathbf{b}| = \\sqrt{${sqB}} = ${magBExact}`,
   });
 
   const cosTheta = Math.max(-1, Math.min(1, dot / (magA * magB)));
   steps.push({
-    descriptionZh: `代入公式：cos θ = ${fmt(dot)} / (${fmt(magA)} × ${fmt(magB)}) = ${fmt(cosTheta)}`,
-    descriptionEn: `Substitute: cos θ = ${fmt(dot)} / (${fmt(magA)} × ${fmt(magB)}) = ${fmt(cosTheta)}`,
-    latex: `\\cos\\theta = \\frac{${fmt(dot)}}{${fmt(magA)} \\times ${fmt(magB)}} = \\frac{${fmt(dot)}}{${fmt(magA * magB)}} = ${fmt(cosTheta)}`,
+    descriptionZh: `代入公式：cos θ = ${fmt(dot)} / (${magAExact} × ${magBExact}) = ${fmt(cosTheta)}`,
+    descriptionEn: `Substitute: cos θ = ${fmt(dot)} / (${magAExact} × ${magBExact}) = ${fmt(cosTheta)}`,
+    latex: `\\cos\\theta = \\frac{${fmt(dot)}}{${magAExact} \\cdot ${magBExact}} = ${fmt(cosTheta)}`,
   });
 
   const theta = Math.acos(cosTheta);
   const thetaDeg = (theta * 180) / Math.PI;
+  const { deg: thetaDegExact, rad: thetaRadExact } = angleExact(thetaDeg);
 
   steps.push({
-    descriptionZh: `取反餘弦：θ = arccos(${fmt(cosTheta)}) = ${fmt(thetaDeg)}°`,
-    descriptionEn: `Take arccosine: θ = arccos(${fmt(cosTheta)}) = ${fmt(thetaDeg)}°`,
-    latex: `\\theta = \\arccos(${fmt(cosTheta)}) = ${fmt(thetaDeg)}^\\circ`,
+    descriptionZh: `取反餘弦：θ = arccos(${fmt(cosTheta)}) = ${thetaDegExact}`,
+    descriptionEn: `Take arccosine: θ = arccos(${fmt(cosTheta)}) = ${thetaDegExact}`,
+    latex: `\\theta = \\arccos(${fmt(cosTheta)}) = ${thetaDegExact} = ${thetaRadExact}`,
     value: thetaDeg,
   });
 
@@ -354,14 +360,16 @@ export function vecNormalize(a: VecN): VectorResult {
   }
 
   const sqTerms = a.map((v) => `(${fmt(v)})^2`).join("+");
+  const magExact = sqrtExact(sumSq);
   steps.push({
-    descriptionZh: `計算模：|a| = √(${sqTerms}) = √${fmt(sumSq)} = ${fmt(mag)}`,
-    descriptionEn: `Compute magnitude: |a| = √(${sqTerms}) = √${fmt(sumSq)} = ${fmt(mag)}`,
-    latex: `|\\mathbf{a}| = \\sqrt{${sqTerms}} = \\sqrt{${fmt(sumSq)}} = ${fmt(mag)}`,
+    descriptionZh: `計算模：|a| = √(${sqTerms}) = ${magExact}`,
+    descriptionEn: `Compute magnitude: |a| = √(${sqTerms}) = ${magExact}`,
+    latex: `|\\mathbf{a}| = \\sqrt{${sqTerms}} = ${magExact}`,
   });
 
   const result = a.map((v) => v / mag);
-  const divSteps = a.map((v, i) => `${compLabel(i)}: \\frac{${fmt(v)}}{${fmt(mag)}} = ${fmt(v/mag)}`).join(",\\quad ");
+  // Show exact fractions for each component
+  const divSteps = a.map((v, i) => `${compLabel(i)}: \\frac{${fmt(v)}}{${magExact}} = ${fmt(v/mag)}`).join(",\\quad ");
 
   steps.push({
     descriptionZh: "各分量除以模：",
@@ -372,7 +380,7 @@ export function vecNormalize(a: VecN): VectorResult {
   steps.push({
     descriptionZh: "最終結果：單位向量",
     descriptionEn: "Final result: unit vector",
-    latex: `\\hat{\\mathbf{a}} = \\frac{1}{${fmt(mag)}} ${vecToLatex(a)} = ${vecToLatex(result)}`,
+    latex: `\\hat{\\mathbf{a}} = \\frac{1}{${magExact}} ${vecToLatex(a)} = ${vecToLatex(result)}`,
     value: result,
   });
 
@@ -520,4 +528,82 @@ export function computeTriangleCenters(A: Vec3, B: Vec3, C: Vec3): TriangleCente
   });
 
   return { centroid, incenter, circumcenter, orthocenter, sideA, sideB, sideC, steps };
+}
+
+// ─── Vector Projection ────────────────────────────────────────────────────────
+// proj_b(a) = (a·b / |b|²) * b   — projection of a onto b
+// perp_b(a) = a - proj_b(a)       — component of a perpendicular to b
+export interface ProjectionResult extends VectorResult {
+  projVector?: VecN;   // the projection vector
+  perpVector?: VecN;   // the perpendicular component
+}
+export function vecProjection(a: VecN, b: VecN): ProjectionResult {
+  const steps: VectorStep[] = [];
+  const dim = a.length;
+  steps.push({
+    descriptionZh: `向量投影：將 a 投影到 b 的方向上（${dim}D）`,
+    descriptionEn: `Vector projection: project a onto the direction of b (${dim}D)`,
+    latex: `\\mathbf{a} = ${vecToLatex(a)},\\quad \\mathbf{b} = ${vecToLatex(b)}`,
+  });
+  steps.push({
+    descriptionZh: "投影公式：proj_b(a) = (a·b / |b|²) · b",
+    descriptionEn: "Projection formula: proj_b(a) = (a·b / |b|²) · b",
+    latex: `\\text{proj}_{\\mathbf{b}}(\\mathbf{a}) = \\frac{\\mathbf{a} \\cdot \\mathbf{b}}{|\\mathbf{b}|^2} \\cdot \\mathbf{b}`,
+  });
+  const dot = a.reduce((s, v, i) => s + v * b[i], 0);
+  const dotTerms = a.map((v, i) => `(${fmt(v)})(${fmt(b[i])})`).join("+");
+  steps.push({
+    descriptionZh: `計算點積 a·b`,
+    descriptionEn: `Compute dot product a·b`,
+    latex: `\\mathbf{a} \\cdot \\mathbf{b} = ${dotTerms} = ${fmt(dot)}`,
+  });
+  const magBSq = b.reduce((s, v) => s + v * v, 0);
+  const magBSqTerms = b.map((v) => `(${fmt(v)})^2`).join("+");
+  const magB = Math.sqrt(magBSq);
+  if (magBSq < 1e-10) {
+    return { steps, error: "zero_vector" };
+  }
+  steps.push({
+    descriptionZh: `計算 |b|²`,
+    descriptionEn: `Compute |b|²`,
+    latex: `|\\mathbf{b}|^2 = ${magBSqTerms} = ${fmt(magBSq)}`,
+  });
+  const t = dot / magBSq;
+  steps.push({
+    descriptionZh: `計算純量係數 t = a·b / |b|²`,
+    descriptionEn: `Compute scalar coefficient t = a·b / |b|²`,
+    latex: `t = \\frac{${fmt(dot)}}{${fmt(magBSq)}} = ${fmt(t)}`,
+  });
+  const projVec = b.map((v) => t * v);
+  steps.push({
+    descriptionZh: `計算投影向量 proj_b(a) = t · b`,
+    descriptionEn: `Compute projection vector proj_b(a) = t · b`,
+    latex: `\\text{proj}_{\\mathbf{b}}(\\mathbf{a}) = ${fmt(t)} \\cdot ${vecToLatex(b)} = ${vecToLatex(projVec)}`,
+  });
+  const perpVec = a.map((v, i) => v - projVec[i]);
+  steps.push({
+    descriptionZh: `計算垂直分量 a⊥ = a − proj_b(a)`,
+    descriptionEn: `Compute perpendicular component a⊥ = a − proj_b(a)`,
+    latex: `\\mathbf{a}_{\\perp} = \\mathbf{a} - \\text{proj}_{\\mathbf{b}}(\\mathbf{a}) = ${vecToLatex(a)} - ${vecToLatex(projVec)} = ${vecToLatex(perpVec)}`,
+  });
+  const scalarProj = dot / magB;
+  const magBExact = sqrtExact(magBSq);
+  steps.push({
+    descriptionZh: `純量投影（a 在 b 方向的分量長度）= a·b / |b| = ${fmt(scalarProj)}`,
+    descriptionEn: `Scalar projection (length of a's component along b) = a·b / |b| = ${fmt(scalarProj)}`,
+    latex: `|\\mathbf{a}|\\cos\\theta = \\frac{\\mathbf{a} \\cdot \\mathbf{b}}{|\\mathbf{b}|} = \\frac{${fmt(dot)}}{${magBExact}} = ${fmt(scalarProj)}`,
+  });
+  const verifyDot = projVec.reduce((s, v, i) => s + v * perpVec[i], 0);
+  steps.push({
+    descriptionZh: `驗證：投影向量與垂直分量的點積應為 0（互相垂直）`,
+    descriptionEn: `Verification: dot product of projection and perpendicular component should be 0`,
+    latex: `\\text{proj}_{\\mathbf{b}}(\\mathbf{a}) \\cdot \\mathbf{a}_{\\perp} = ${fmt(verifyDot)} \\approx 0 \\checkmark`,
+  });
+  steps.push({
+    descriptionZh: `分解結果：a = proj_b(a) + a⊥`,
+    descriptionEn: `Decomposition: a = proj_b(a) + a⊥`,
+    latex: `\\mathbf{a} = \\underbrace{${vecToLatex(projVec)}}_{\\text{proj}} + \\underbrace{${vecToLatex(perpVec)}}_{\\perp}`,
+    value: projVec,
+  });
+  return { vector: projVec, projVector: projVec, perpVector: perpVec, scalar: scalarProj, steps };
 }

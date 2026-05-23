@@ -3,6 +3,7 @@
  * Eigenvalue and eigenvector computation with detailed bilingual step-by-step derivations.
  * Supports 2×2 and 3×3 real matrices.
  */
+import { fmt as fmtShared, sqrtExact } from "./matrixMath";
 
 export interface EigenStep {
   titleZh: string;
@@ -23,18 +24,9 @@ export interface EigenResult {
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
-function fmt(v: number, decimals = 4): string {
-  if (Math.abs(v) < 1e-10) return "0";
-  const r = parseFloat(v.toFixed(decimals));
-  return r.toString();
-}
-
 function fmtFrac(v: number): string {
-  // Try to express as a simple fraction or integer
-  if (Math.abs(v) < 1e-10) return "0";
-  const rounded = Math.round(v * 1000) / 1000;
-  if (Number.isInteger(rounded)) return rounded.toString();
-  return fmt(v, 4);
+  // Use the shared exact formatter (fraction/integer/decimal)
+  return fmtShared(v);
 }
 
 function matrixToLatex(m: number[][], highlight?: number[][]): string {
@@ -160,7 +152,7 @@ function solve2x2(A: number[][]): EigenResult {
     steps.push({
       titleZh: "第五步：用求根公式求特徵值",
       titleEn: "Step 5: Apply Quadratic Formula",
-      latex: `\\lambda = \\frac{${fmtFrac(trA)} \\pm \\sqrt{${fmtFrac(disc)}}}{2} = \\frac{${fmtFrac(trA)} \\pm ${fmtFrac(sqrtDisc)}}{2}`,
+      latex: `\\lambda = \\frac{${fmtFrac(trA)} \\pm \\sqrt{${fmtFrac(disc)}}}{2} = \\frac{${fmtFrac(trA)} \\pm ${sqrtExact(disc)}}{2}`,
       explanationZh: `代入求根公式，得到兩個特徵值。`,
       explanationEn: `Applying the quadratic formula gives two eigenvalues.`,
     });

@@ -8,9 +8,9 @@ import VectorPlot2D from "@/components/VectorPlot2D";
 import VectorPlot3D from "@/components/VectorPlot3D";
 import {
   vecAdd, vecSub, vecDot, vecCross, vecMagnitude, vecAngle, vecNormalize,
-  vecToLatex, computeTriangleCenters, type Vec3,
+  vecProjection, vecToLatex, computeTriangleCenters, type Vec3,
 } from "@/lib/vectorMath";
-import { fmt } from "@/lib/matrixMath";
+import { fmt, sqrtExact, angleExact } from "@/lib/matrixMath";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, CheckCircle2, Triangle, BarChart2 } from "lucide-react";
 import PracticePanel from "@/components/PracticePanel";
@@ -18,15 +18,15 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { generateRandomVectorQuestion } from "@/lib/practiceGenerator";
 
 type Dim = "2d" | "3d";
-type VecOp = "add" | "sub" | "dot" | "cross" | "mag" | "angle" | "normalize";
+type VecOp = "add" | "sub" | "dot" | "cross" | "mag" | "angle" | "normalize" | "projection";
 
-const OPS_2D: VecOp[] = ["add", "sub", "dot", "mag", "angle", "normalize"];
-const OPS_3D: VecOp[] = ["add", "sub", "dot", "cross", "mag", "angle", "normalize"];
+const OPS_2D: VecOp[] = ["add", "sub", "dot", "mag", "angle", "normalize", "projection"];
+const OPS_3D: VecOp[] = ["add", "sub", "dot", "cross", "mag", "angle", "normalize", "projection"];
 
-const NEEDS_B: VecOp[] = ["add", "sub", "dot", "cross", "angle"];
+const NEEDS_B: VecOp[] = ["add", "sub", "dot", "cross", "angle", "projection"];
 
 // Operations that benefit from interactive visualization
-const VIS_OPS: VecOp[] = ["add", "sub", "dot", "cross", "angle", "normalize"];
+const VIS_OPS: VecOp[] = ["add", "sub", "dot", "cross", "angle", "normalize", "projection"];
 
 function PointInput({
   label, color, value, onChange, labels,
@@ -87,6 +87,10 @@ function GeomHint({ op, dim, lang }: { op: VecOp; dim: Dim; lang: "zh" | "en" })
     normalize: {
       zh: "單位向量：保持方向不變，將長度縮放至 1",
       en: "Unit vector: same direction as a, scaled to length 1",
+    },
+    projection: {
+      zh: "向量投影：a 在 b 方向的分量（綠色箭頭），垂直分量（黃色虛線）與 b 垂直",
+      en: "Vector projection: component of a along b (green arrow); perpendicular component (amber dashed) is orthogonal to b",
     },
   };
   const h = hints[op];
@@ -155,6 +159,7 @@ export default function VectorPage() {
         case "mag": res = vecMagnitude(vecA); break;
         case "angle": res = vecAngle(vecA, vecB); break;
         case "normalize": res = vecNormalize(vecA); break;
+        case "projection": res = vecProjection(vecA, vecB); break;
         default: return;
       }
       if (res.error) {
@@ -216,6 +221,7 @@ export default function VectorPage() {
     mag: t.opMagnitude,
     angle: t.opAngle,
     normalize: t.opNormalize,
+    projection: lang === "zh" ? "向量投影" : "Projection",
   };
 
   const availableOps = dim === "2d" ? OPS_2D : OPS_3D;
@@ -223,10 +229,13 @@ export default function VectorPage() {
   const showVis = VIS_OPS.includes(op);
 
   // Build visualization vector arrays
+  // For projection: show a (blue), b (red), and the projection vector is shown via projVector prop
+  const isProjection = op === "projection";
   const visVectors2D = [
     { x: vecA[0], y: vecA[1], color: "#2563EB", label: "a" },
     ...(needsB ? [{ x: vecB[0], y: vecB[1], color: "#DC2626", label: "b" }] : []),
-    ...(result?.vector
+    // For non-projection ops, show result vector
+    ...(!isProjection && result?.vector
       ? [{ x: result.vector[0], y: result.vector[1], color: "#16A34A", label: "result" }]
       : []),
   ];
@@ -234,10 +243,17 @@ export default function VectorPage() {
   const visVectors3D = [
     { x: vecA[0], y: vecA[1], z: vecA[2] || 0, color: "#2563EB", label: "a" },
     ...(needsB ? [{ x: vecB[0], y: vecB[1], z: vecB[2] || 0, color: "#DC2626", label: "b" }] : []),
-    ...(result?.vector
+    // For non-projection ops, show result vector
+    ...(!isProjection && result?.vector
       ? [{ x: result.vector[0], y: result.vector[1], z: result.vector[2] || 0, color: "#16A34A", label: "r" }]
       : []),
   ];
+
+  // Projection-specific visualization data
+  const projVec2D = isProjection && result?.projVector ? result.projVector : undefined;
+  const perpVec2D = isProjection && result?.perpVector ? result.perpVector : undefined;
+  const projVec3D = isProjection && result?.projVector ? result.projVector : undefined;
+  const perpVec3D = isProjection && result?.perpVector ? result.perpVector : undefined;
 
   const labels = dim === "2d" ? ["x", "y"] : ["x", "y", "z"];
   const labels3D = ["x", "y", "z"];
@@ -539,9 +555,9 @@ export default function VectorPage() {
 
               {showVis ? (
                 dim === "2d" ? (
-                  <VectorPlot2D vectors={visVectors2D} op={op} lang={lang} />
+                  <VectorPlot2D vectors={visVectors2D} op={op} lang={lang} projVector={projVec2D} perpVector={perpVec2D} />
                 ) : (
-                  <VectorPlot3D vectors={visVectors3D} op={op} lang={lang} />
+                  <VectorPlot3D vectors={visVectors3D} op={op} lang={lang} projVector={projVec3D} perpVector={perpVec3D} />
                 )
               ) : (
                 <div className="flex items-center justify-center h-40 rounded-lg border border-border bg-secondary/20 text-sm text-muted-foreground font-mono">
@@ -609,12 +625,18 @@ export default function VectorPage() {
                   {result.vector && (
                     <KatexRenderer latex={vecToLatex(result.vector)} displayMode={true} />
                   )}
-                  {result.scalar !== undefined && (
-                    <KatexRenderer
-                      latex={`= ${fmt(result.scalar)}${op === "angle" ? "^\\circ" : ""}`}
-                      displayMode={true}
-                    />
-                  )}
+                  {result.scalar !== undefined && (() => {
+                    if (op === "angle") {
+                      const { deg: dStr, rad: rStr } = angleExact(result.scalar);
+                      return <KatexRenderer latex={`= ${dStr} = ${rStr}`} displayMode={true} />;
+                    }
+                    if (op === "mag") {
+                      // Reconstruct sumSq from vecA to show exact sqrt form
+                      const sumSq = vecA.reduce((s: number, v: number) => s + v * v, 0);
+                      return <KatexRenderer latex={`= ${sqrtExact(sumSq)}`} displayMode={true} />;
+                    }
+                    return <KatexRenderer latex={`= ${fmt(result.scalar)}`} displayMode={true} />;
+                  })()}
                 </div>
               </div>
 

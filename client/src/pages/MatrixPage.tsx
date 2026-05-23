@@ -8,6 +8,7 @@ import KatexRenderer from "@/components/KatexRenderer";
 import PracticePanel from "@/components/PracticePanel";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { generateRandomMatrixQuestion } from "@/lib/practiceGenerator";
+import MatrixTransformPlot from "@/components/MatrixTransformPlot";
 import {
   Matrix,
   zeroMatrix,
@@ -55,6 +56,7 @@ export default function MatrixPage() {
   const genQuestion = useCallback(() => generateRandomMatrixQuestion(lang), [lang]);
 
   const [op, setOp] = useState<Operation>("add");
+  const [transformMatrix, setTransformMatrix] = useState<number[][]>([[1, 0], [0, 1]]);
   const [matrices, setMatrices] = useState<MatrixEntry[]>([
     { id: 1, rows: 2, cols: 2, data: makeMatrix(2, 2) },
     { id: 2, rows: 2, cols: 2, data: makeMatrix(2, 2) },
@@ -191,8 +193,112 @@ export default function MatrixPage() {
       <Tabs defaultValue="calc">
         <TabsList>
           <TabsTrigger value="calc">{t.calcMode}</TabsTrigger>
+          <TabsTrigger value="transform">
+            {lang === "zh" ? "幾何變換" : "Transform"}
+          </TabsTrigger>
           <TabsTrigger value="practice">{t.practiceMode}</TabsTrigger>
         </TabsList>
+
+        {/* ── Geometric Transform Visualization Tab ── */}
+        <TabsContent value="transform" className="mt-4 space-y-4">
+          <div className="p-4 rounded-lg border border-border bg-secondary/30 space-y-2">
+            <p className="text-sm font-semibold text-foreground">
+              {lang === "zh" ? "矩陣線性變換視覺化" : "Matrix Linear Transformation Visualizer"}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {lang === "zh"
+                ? "輸入一個 2×2 矩陣，觀察它如何將單位正方形和單位圓進行變換（拉伸、旋轉、剪切、反射）。列即標準基底的像。"
+                : "Enter a 2×2 matrix to see how it transforms the unit square and unit circle (stretch, rotate, shear, reflect). Columns are images of standard basis vectors."}
+            </p>
+          </div>
+
+          {/* Preset buttons */}
+          <div className="flex flex-wrap gap-2">
+            {[
+              { label: lang === "zh" ? "旋轉90°" : "Rotate 90°", m: [[0,-1],[1,0]] },
+              { label: lang === "zh" ? "旋轉45°" : "Rotate 45°", m: [[Math.SQRT1_2,-Math.SQRT1_2],[Math.SQRT1_2,Math.SQRT1_2]] },
+              { label: lang === "zh" ? "水平剪切" : "Horiz. Shear", m: [[1,1],[0,1]] },
+              { label: lang === "zh" ? "垂直剪切" : "Vert. Shear", m: [[1,0],[1,1]] },
+              { label: lang === "zh" ? "拉伸 x2" : "Scale x2", m: [[2,0],[0,2]] },
+              { label: lang === "zh" ? "水平反射" : "Horiz. Reflect", m: [[1,0],[0,-1]] },
+              { label: lang === "zh" ? "對角線反射" : "Reflect y=x", m: [[0,1],[1,0]] },
+              { label: lang === "zh" ? "x 軸投影" : "Project x-axis", m: [[1,0],[0,0]] },
+            ].map(({ label, m }) => (
+              <button
+                key={label}
+                onClick={() => setTransformMatrix(m.map(row => [...row]))}
+                className="px-3 py-1.5 text-xs font-mono rounded border border-border bg-card hover:bg-secondary hover:border-primary/50 transition-all duration-150"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* Matrix input */}
+          <div className="p-4 rounded-lg border border-border bg-card">
+            <p className="text-xs font-semibold font-mono uppercase tracking-wide text-muted-foreground mb-3">
+              {lang === "zh" ? "輸入 2×2 矩陣 A" : "Enter 2×2 Matrix A"}
+            </p>
+            <div className="flex items-center gap-2">
+              <svg width="10" height="100" viewBox="0 0 10 100" fill="none">
+                <path d="M8 4 L3 4 L3 96 L8 96" stroke="#6366F1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <div className="grid grid-cols-2 gap-2">
+                {transformMatrix.map((row, i) =>
+                  row.map((val, j) => (
+                    <input
+                      key={`${i}-${j}`}
+                      type="number"
+                      value={val === 0 ? "" : val}
+                      placeholder="0"
+                      onChange={(e) => {
+                        const n = parseFloat(e.target.value);
+                        setTransformMatrix(prev => prev.map((r, ri) => r.map((c, ci) => ri === i && ci === j ? (isNaN(n) ? 0 : n) : c)));
+                      }}
+                      className="matrix-cell w-16"
+                    />
+                  ))
+                )}
+              </div>
+              <svg width="10" height="100" viewBox="0 0 10 100" fill="none">
+                <path d="M2 4 L7 4 L7 96 L2 96" stroke="#6366F1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+          </div>
+
+          {/* Visualization */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-semibold font-mono uppercase tracking-wide text-muted-foreground">
+                {lang === "zh" ? "變換效果" : "Transformation Effect"}
+              </h3>
+              <span className="text-xs text-primary/70 font-mono">
+                {lang === "zh" ? "（可縮放·可拖曳）" : "(zoomable · draggable)"}
+              </span>
+            </div>
+            <MatrixTransformPlot matrix={transformMatrix} lang={lang} />
+          </div>
+
+          {/* Legend */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
+            <span className="flex items-center gap-1.5">
+              <span className="w-4 h-0.5 border-t border-dashed border-gray-400 inline-block" />
+              <span className="text-muted-foreground">{lang === "zh" ? "原始形狀" : "Original"}</span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-4 h-2 bg-indigo-400/20 border border-indigo-400/60 inline-block rounded" />
+              <span className="text-muted-foreground">{lang === "zh" ? "變換後" : "Transformed"}</span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-4 h-0.5 bg-red-600 inline-block rounded" />
+              <span className="text-muted-foreground">Ae₁ {lang === "zh" ? "（第一行）" : "(col 1)"}</span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-4 h-0.5 bg-green-600 inline-block rounded" />
+              <span className="text-muted-foreground">Ae₂ {lang === "zh" ? "（第二行）" : "(col 2)"}</span>
+            </span>
+          </div>
+        </TabsContent>
 
         <TabsContent value="practice" className="mt-4">
           <PracticePanel generateQuestion={genQuestion} moduleLabel={lang === "zh" ? "矩陣練習" : "Matrix Practice"} />
