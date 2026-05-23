@@ -386,3 +386,138 @@ export function vecNormalize(a: VecN): VectorResult {
 
   return { vector: result, steps };
 }
+
+// ─── Triangle Centers (3D) ────────────────────────────────────────────────────
+// Given three 3D points A, B, C forming a triangle, compute the four centers:
+// Centroid (重心), Incenter (內心), Circumcenter (外心), Orthocenter (垂心)
+
+export interface TriangleCenterResult {
+  centroid: Vec3;
+  incenter: Vec3;
+  circumcenter: Vec3;
+  orthocenter: Vec3;
+  sideA: number; // length of BC (opposite to vertex A)
+  sideB: number; // length of CA (opposite to vertex B)
+  sideC: number; // length of AB (opposite to vertex C)
+  steps: { descriptionZh: string; descriptionEn: string; latex: string }[];
+}
+
+function tc_sub(a: Vec3, b: Vec3): Vec3 { return [a[0]-b[0], a[1]-b[1], a[2]-b[2]]; }
+function tc_add(a: Vec3, b: Vec3): Vec3 { return [a[0]+b[0], a[1]+b[1], a[2]+b[2]]; }
+function tc_scale(a: Vec3, s: number): Vec3 { return [a[0]*s, a[1]*s, a[2]*s]; }
+function tc_len(a: Vec3): number { return Math.sqrt(a[0]*a[0]+a[1]*a[1]+a[2]*a[2]); }
+function tc_dot(a: Vec3, b: Vec3): number { return a[0]*b[0]+a[1]*b[1]+a[2]*b[2]; }
+
+function tc_fmtV(v: Vec3): string {
+  const f = (n: number) => {
+    if (Math.abs(n) < 1e-10) return "0";
+    if (Number.isInteger(n)) return String(n);
+    return parseFloat(n.toFixed(4)).toString();
+  };
+  return `(${f(v[0])},\\, ${f(v[1])},\\, ${f(v[2])})`;
+}
+function tc_fmtN(n: number): string {
+  if (Math.abs(n) < 1e-10) return "0";
+  if (Number.isInteger(n)) return String(n);
+  return parseFloat(n.toFixed(4)).toString();
+}
+
+export function computeTriangleCenters(A: Vec3, B: Vec3, C: Vec3): TriangleCenterResult {
+  const steps: { descriptionZh: string; descriptionEn: string; latex: string }[] = [];
+
+  // Side lengths
+  const BC = tc_sub(C, B); const sideA = tc_len(BC); // opposite to A
+  const CA = tc_sub(A, C); const sideB = tc_len(CA); // opposite to B
+  const AB = tc_sub(B, A); const sideC = tc_len(AB); // opposite to C
+
+  steps.push({
+    descriptionZh: "輸入三點坐標",
+    descriptionEn: "Input three vertices",
+    latex: `A=${tc_fmtV(A)},\\quad B=${tc_fmtV(B)},\\quad C=${tc_fmtV(C)}`,
+  });
+
+  steps.push({
+    descriptionZh: "計算各邊長度（a = |BC|，b = |CA|，c = |AB|）",
+    descriptionEn: "Compute side lengths (a = |BC|, b = |CA|, c = |AB|)",
+    latex: `a=|BC|=${tc_fmtN(sideA)},\\quad b=|CA|=${tc_fmtN(sideB)},\\quad c=|AB|=${tc_fmtN(sideC)}`,
+  });
+
+  // ── Centroid: G = (A+B+C)/3 ──
+  const centroid: Vec3 = [
+    (A[0]+B[0]+C[0])/3,
+    (A[1]+B[1]+C[1])/3,
+    (A[2]+B[2]+C[2])/3,
+  ];
+  steps.push({
+    descriptionZh: "重心（Centroid）G：三頂點坐標的算術平均，即三條中線的交點",
+    descriptionEn: "Centroid G: arithmetic mean of the three vertices (intersection of medians)",
+    latex: `G = \\frac{A+B+C}{3} = ${tc_fmtV(centroid)}`,
+  });
+
+  // ── Incenter: I = (a·A + b·B + c·C) / (a+b+c) ──
+  const perim = sideA + sideB + sideC;
+  const incenter: Vec3 = [
+    (sideA*A[0] + sideB*B[0] + sideC*C[0]) / perim,
+    (sideA*A[1] + sideB*B[1] + sideC*C[1]) / perim,
+    (sideA*A[2] + sideB*B[2] + sideC*C[2]) / perim,
+  ];
+  steps.push({
+    descriptionZh: "內心（Incenter）I：以對邊長為權重的加權平均，即三條角平分線的交點，是內切圓圓心",
+    descriptionEn: "Incenter I: weighted average with opposite side lengths as weights (intersection of angle bisectors, center of inscribed circle)",
+    latex: `I = \\frac{a\\cdot A + b\\cdot B + c\\cdot C}{a+b+c} = \\frac{${tc_fmtN(sideA)}A + ${tc_fmtN(sideB)}B + ${tc_fmtN(sideC)}C}{${tc_fmtN(perim)}} = ${tc_fmtV(incenter)}`,
+  });
+
+  // ── Circumcenter: O = A + s*AB + t*AC, solve |O-A|^2 = |O-B|^2 = |O-C|^2 ──
+  // Expanding the equal-distance conditions yields:
+  //   s*(AB·AB) + t*(AB·AC) = (AB·AB)/2
+  //   s*(AB·AC) + t*(AC·AC) = (AC·AC)/2
+  // Solve 2x2 linear system by Cramer's rule.
+  const AC = tc_sub(C, A);
+  const d1 = tc_dot(AB, AB); // AB·AB = |AB|^2
+  const d2 = tc_dot(AB, AC); // AB·AC
+  const d3 = tc_dot(AC, AC); // AC·AC = |AC|^2
+  const det = d1 * d3 - d2 * d2;  // determinant of the 2x2 system
+  let circumcenter: Vec3;
+  if (Math.abs(det) < 1e-12) {
+    // Degenerate (collinear) — fallback to centroid
+    circumcenter = [...centroid] as Vec3;
+    steps.push({
+      descriptionZh: "外心（Circumcenter）：三點共線，三角形退化，以重心代替",
+      descriptionEn: "Circumcenter: degenerate (collinear points), fallback to centroid",
+      latex: `O \\approx G = ${tc_fmtV(circumcenter)}`,
+    });
+  } else {
+    // Cramer's rule: s = (rhs1*d3 - rhs2*d2) / det, t = (d1*rhs2 - d2*rhs1) / det
+    // where rhs1 = d1/2, rhs2 = d3/2
+    const rhs1 = d1 / 2;
+    const rhs2 = d3 / 2;
+    const s = (rhs1 * d3 - rhs2 * d2) / det;
+    const t = (d1 * rhs2 - d2 * rhs1) / det;
+    circumcenter = tc_add(A, tc_add(tc_scale(AB, s), tc_scale(AC, t)));
+    steps.push({
+      descriptionZh: "外心（Circumcenter）O：三角形外接圓圓心，到三頂點距離相等，即三條垂直平分線的交點",
+      descriptionEn: "Circumcenter O: center of circumscribed circle, equidistant from all three vertices (intersection of perpendicular bisectors)",
+      latex: `O = A + s\\cdot\\overrightarrow{AB} + t\\cdot\\overrightarrow{AC},\\quad s=${tc_fmtN(s)},\\; t=${tc_fmtN(t)} \\Rightarrow O=${tc_fmtV(circumcenter)}`,
+    });
+  }
+
+  // ── Orthocenter: H = 3G - 2O (Euler line) ──
+  const orthocenter: Vec3 = [
+    3*centroid[0] - 2*circumcenter[0],
+    3*centroid[1] - 2*circumcenter[1],
+    3*centroid[2] - 2*circumcenter[2],
+  ];
+  steps.push({
+    descriptionZh: "垂心（Orthocenter）H：三條高的交點，利用歐拉線關係 H = 3G − 2O 計算",
+    descriptionEn: "Orthocenter H: intersection of altitudes, computed via Euler line relation H = 3G − 2O",
+    latex: `H = 3G - 2O = 3\\cdot${tc_fmtV(centroid)} - 2\\cdot${tc_fmtV(circumcenter)} = ${tc_fmtV(orthocenter)}`,
+  });
+
+  steps.push({
+    descriptionZh: "歐拉線定理：垂心 H、重心 G、外心 O 三點共線，且 HG:GO = 2:1",
+    descriptionEn: "Euler line theorem: H, G, O are collinear with ratio HG:GO = 2:1",
+    latex: `H,\\, G,\\, O \\text{ are collinear on the Euler line},\\quad HG:GO = 2:1`,
+  });
+
+  return { centroid, incenter, circumcenter, orthocenter, sideA, sideB, sideC, steps };
+}

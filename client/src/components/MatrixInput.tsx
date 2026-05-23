@@ -108,6 +108,7 @@ interface DimSelectorProps {
   maxDim?: number;
   rowsLabel: string;
   colsLabel: string;
+  squareOnly?: boolean;
 }
 
 export function DimSelector({
@@ -119,8 +120,31 @@ export function DimSelector({
   maxDim = 5,
   rowsLabel,
   colsLabel,
+  squareOnly = false,
 }: DimSelectorProps) {
   const dims = Array.from({ length: maxDim }, (_, i) => i + 1);
+
+  if (squareOnly) {
+    // For square matrices (det, inv): show single n×n selector
+    return (
+      <div className="flex items-center gap-3 flex-wrap">
+        <span className="text-sm font-medium text-muted-foreground">{label}:</span>
+        <div className="flex items-center gap-2">
+          <label className="text-xs text-muted-foreground">大小 / Size</label>
+          <select
+            value={rows}
+            onChange={(e) => onRowsChange(Number(e.target.value))}
+            className="h-7 px-2 text-sm border border-border rounded bg-card text-foreground focus:border-accent focus:ring-0 outline-none"
+          >
+            {dims.map((d) => (
+              <option key={d} value={d}>{d}×{d}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center gap-3 flex-wrap">
       <span className="text-sm font-medium text-muted-foreground">{label}:</span>

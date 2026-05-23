@@ -7,7 +7,7 @@ import KatexRenderer from "@/components/KatexRenderer";
 import PracticePanel from "@/components/PracticePanel";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { solveLinearSystem, type GeneralSolutionTerm } from "@/lib/linearSystem";
-import { matrixToLatex, fmt } from "@/lib/matrixMath";
+import { matrixToLatex, fmt, matInverse, matMul } from "@/lib/matrixMath";
 import { generateLinearSystemQuestion } from "@/lib/practiceGenerator";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, CheckCircle2, Infinity, XCircle } from "lucide-react";
@@ -52,6 +52,7 @@ export default function LinearSystemPage() {
   const [coeffs, setCoeffs] = useState<number[][]>(makeGrid(2, 2));
   const [consts, setConsts] = useState<number[]>(Array(2).fill(0));
   const [result, setResult] = useState<any>(null);
+  const [inverseResult, setInverseResult] = useState<any>(null); // inverse method result
   const [error, setError] = useState<string | null>(null);
 
   function resizeSystem(eq: number, vr: number) {
@@ -80,9 +81,29 @@ export default function LinearSystemPage() {
   function handleSolve() {
     setError(null);
     setResult(null);
+    setInverseResult(null);
     try {
       const res = solveLinearSystem(coeffs, consts);
       setResult(res);
+
+      // If square system, also try inverse method: x = A^{-1}b
+      if (numEq === numVar) {
+        const invRes = matInverse(coeffs);
+        if (!invRes.error && invRes.result) {
+          // Compute x = A^{-1} * b (b as column vector)
+          const bCol = consts.map((v) => [v]);
+          const xCol = matMul(invRes.result, bCol);
+          if (!xCol.error && xCol.result) {
+            const solution = xCol.result.map((row: number[]) => row[0]);
+            setInverseResult({
+              invMatrix: invRes.result,
+              invSteps: invRes.steps,
+              solution,
+              mulSteps: xCol.steps,
+            });
+          }
+        }
+      }
     } catch (e) {
       setError(t.errInvalidInput);
     }
@@ -92,6 +113,7 @@ export default function LinearSystemPage() {
     setCoeffs(makeGrid(numEq, numVar));
     setConsts(Array(numEq).fill(0));
     setResult(null);
+    setInverseResult(null);
     setError(null);
   }
 
@@ -318,9 +340,57 @@ export default function LinearSystemPage() {
             </div>
           )}
 
-          {/* Steps */}
-          {result.steps && result.steps.length > 0 && (
-            <StepDisplay steps={result.steps} title={t.steps} />
+          {/* Steps: dual-column when inverse method is available */}
+          {inverseResult ? (
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+              {/* Column 1: Gaussian Elimination */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 pb-2 border-b border-border">
+                  <span className="text-xs font-bold font-mono uppercase tracking-wide text-accent">
+                    {lang === "zh" ? "方法一：高斯消元法" : "Method 1: Gaussian Elimination"}
+                  </span>
+                </div>
+                {result.steps && result.steps.length > 0 && (
+                  <StepDisplay steps={result.steps} title={lang === "zh" ? "高斯消元步驟" : "Gaussian Steps"} />
+                )}
+              </div>
+              {/* Column 2: Inverse Matrix Method */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 pb-2 border-b border-border">
+                  <span className="text-xs font-bold font-mono uppercase tracking-wide text-accent">
+                    {lang === "zh" ? "方法二：逆矩陣法" : "Method 2: Inverse Matrix Method"}
+                  </span>
+                </div>
+                <div className="p-3 rounded-lg border border-border bg-secondary/30 overflow-x-auto">
+                  <p className="text-xs text-muted-foreground mb-2">
+                    {lang === "zh" ? "原理：Ax = b ⟹ x = A⁻¹b" : "Principle: Ax = b ⟹ x = A⁻¹b"}
+                  </p>
+                  <KatexRenderer
+                    latex={`A^{-1} = ${matrixToLatex(inverseResult.invMatrix)}`}
+                    displayMode={true}
+                  />
+                </div>
+                <div className="p-3 rounded-lg border border-accent/30 bg-accent/5 overflow-x-auto">
+                  <KatexRenderer
+                    latex={inverseResult.solution
+                      .map((v: number, i: number) => `x_{${i + 1}} = ${fmt(v)}`)
+                      .join(",\\quad ")}
+                    displayMode={true}
+                  />
+                </div>
+                <StepDisplay
+                  steps={[
+                    ...inverseResult.invSteps.slice(0, 6),
+                    ...inverseResult.mulSteps.slice(0, 4),
+                  ]}
+                  title={lang === "zh" ? "逆矩陣法步驟" : "Inverse Method Steps"}
+                />
+              </div>
+            </div>
+          ) : (
+            result.steps && result.steps.length > 0 && (
+              <StepDisplay steps={result.steps} title={t.steps} />
+            )
           )}
         </div>
       )}

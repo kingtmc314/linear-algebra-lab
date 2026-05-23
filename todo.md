@@ -75,7 +75,7 @@
 
 ### 8d: 測試與部署
 - [x] 所有測試通過（20 tests）
-- [ ] 儲存檢查點並發佈
+- [x] 儲存檢查點並發佈
 
 ## Phase 9: 三項新功能擴充
 
@@ -86,3 +86,10 @@
 - [x] 更新 MatrixPage.tsx：多矩陣輸入 UI（動態新增/刪除矩陣）
 - [x] 新增 MatrixPowerPage.tsx：可對角線化矩陣 n 次方計算頁面
 - [x] 更新 App.tsx 路由及側邊欄
+
+## Phase 10: 三項修復
+
+- [x] 修復 MatrixPage.tsx 矩陣維度選擇器 bug（行數/列數下拉選單無法切換至其他數字）
+- [x] LinearSystemPage.tsx：方陣時雙欄顯示高斯消元法及逆矩陣法
+- [x] VectorPage.tsx 3D 模式：新增四心計算（重心 Centroid、內心 Incenter、外心 Circumcenter、垂心 Orthocenter）
+- [x] 所有測試通過，儲存檢查點

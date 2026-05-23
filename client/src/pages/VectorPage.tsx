@@ -8,11 +8,11 @@ import VectorCanvas2D from "@/components/VectorCanvas2D";
 import VectorCanvas3D from "@/components/VectorCanvas3D";
 import {
   vecAdd, vecSub, vecDot, vecCross, vecMagnitude, vecAngle, vecNormalize,
-  vecToLatex,
+  vecToLatex, computeTriangleCenters, type Vec3,
 } from "@/lib/vectorMath";
 import { fmt } from "@/lib/matrixMath";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, Triangle } from "lucide-react";
 import PracticePanel from "@/components/PracticePanel";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { generateRandomVectorQuestion } from "@/lib/practiceGenerator";
@@ -25,6 +25,35 @@ const OPS_3D: VecOp[] = ["add", "sub", "dot", "cross", "mag", "angle", "normaliz
 
 const NEEDS_B: VecOp[] = ["add", "sub", "dot", "cross", "angle"];
 
+function PointInput({
+  label, color, value, onChange, labels,
+}: {
+  label: string; color: string; value: number[]; onChange: (i: number, v: string) => void; labels: string[];
+}) {
+  return (
+    <div className="p-3 rounded-lg border border-border bg-card space-y-2">
+      <div className="flex items-center gap-2">
+        <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: color }} />
+        <h3 className="text-sm font-semibold font-mono text-foreground">{label}</h3>
+      </div>
+      <div className="flex gap-2 flex-wrap">
+        {value.map((v, i) => (
+          <div key={i} className="flex items-center gap-1">
+            <span className="text-xs font-mono text-muted-foreground">{labels[i]}</span>
+            <input
+              type="number"
+              value={v === 0 ? "" : v}
+              placeholder="0"
+              onChange={(e) => onChange(i, e.target.value)}
+              className="matrix-cell w-16"
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function VectorPage() {
   const { t, lang } = useLanguage();
   const genQuestion = useCallback(() => generateRandomVectorQuestion(lang), [lang]);
@@ -35,6 +64,13 @@ export default function VectorPage() {
   const [vecB, setVecB] = useState([3, 1]);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Triangle centers state
+  const [ptA, setPtA] = useState<number[]>([0, 0, 0]);
+  const [ptB, setPtB] = useState<number[]>([4, 0, 0]);
+  const [ptC, setPtC] = useState<number[]>([2, 3, 0]);
+  const [centerResult, setCenterResult] = useState<any>(null);
+  const [centerError, setCenterError] = useState<string | null>(null);
 
   function switchDim(d: Dim) {
     setDim(d);
@@ -68,7 +104,7 @@ export default function VectorPage() {
         case "dot": res = vecDot(vecA, vecB); break;
         case "cross":
           if (dim !== "3d") { setError(t.errDimMismatch); return; }
-          res = vecCross(vecA as [number, number, number], vecB as [number, number, number]);
+          res = vecCross(vecA as Vec3, vecB as Vec3);
           break;
         case "mag": res = vecMagnitude(vecA); break;
         case "angle": res = vecAngle(vecA, vecB); break;
@@ -90,6 +126,41 @@ export default function VectorPage() {
     setVecB(dim === "2d" ? [3, 1] : [4, 0, 1]);
     setResult(null);
     setError(null);
+  }
+
+  function handleComputeCenters() {
+    setCenterError(null);
+    setCenterResult(null);
+    try {
+      const A = ptA as Vec3;
+      const B = ptB as Vec3;
+      const C = ptC as Vec3;
+      // Check non-degenerate
+      const AB = [B[0]-A[0], B[1]-A[1], B[2]-A[2]];
+      const AC = [C[0]-A[0], C[1]-A[1], C[2]-A[2]];
+      const cross = [
+        AB[1]*AC[2]-AB[2]*AC[1],
+        AB[2]*AC[0]-AB[0]*AC[2],
+        AB[0]*AC[1]-AB[1]*AC[0],
+      ];
+      const area = Math.sqrt(cross[0]**2 + cross[1]**2 + cross[2]**2);
+      if (area < 1e-10) {
+        setCenterError(lang === "zh" ? "三點共線，無法構成三角形" : "Three points are collinear — cannot form a triangle");
+        return;
+      }
+      const res = computeTriangleCenters(A, B, C);
+      setCenterResult(res);
+    } catch {
+      setCenterError(lang === "zh" ? "計算錯誤，請檢查輸入" : "Computation error, please check inputs");
+    }
+  }
+
+  function handleResetCenters() {
+    setPtA([0, 0, 0]);
+    setPtB([4, 0, 0]);
+    setPtC([2, 3, 0]);
+    setCenterResult(null);
+    setCenterError(null);
   }
 
   const opLabels: Record<VecOp, string> = {
@@ -123,6 +194,9 @@ export default function VectorPage() {
   ];
 
   const labels = dim === "2d" ? ["x", "y"] : ["x", "y", "z"];
+  const labels3D = ["x", "y", "z"];
+
+  const fmtPt = (v: number[]) => `(${v.map(n => fmt(n)).join(", ")})`;
 
   return (
     <div className="space-y-6">
@@ -139,13 +213,147 @@ export default function VectorPage() {
       <Tabs defaultValue="calc">
         <TabsList>
           <TabsTrigger value="calc">{t.calcMode}</TabsTrigger>
+          <TabsTrigger value="centers">
+            <Triangle className="w-3 h-3 mr-1" />
+            {lang === "zh" ? "三角形四心" : "Triangle Centers"}
+          </TabsTrigger>
           <TabsTrigger value="practice">{t.practiceMode}</TabsTrigger>
         </TabsList>
 
+        {/* ── Practice Tab ── */}
         <TabsContent value="practice" className="mt-4">
           <PracticePanel generateQuestion={genQuestion} moduleLabel={lang === "zh" ? "向量練習" : "Vector Practice"} />
         </TabsContent>
 
+        {/* ── Triangle Centers Tab ── */}
+        <TabsContent value="centers" className="mt-4 space-y-6">
+          <div className="p-4 rounded-lg border border-border bg-secondary/30 space-y-2">
+            <p className="text-sm font-semibold text-foreground">
+              {lang === "zh" ? "輸入三角形三頂點（3D 坐標）" : "Enter three triangle vertices (3D coordinates)"}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {lang === "zh"
+                ? "計算重心（G）、內心（I）、外心（O）、垂心（H）"
+                : "Compute Centroid (G), Incenter (I), Circumcenter (O), Orthocenter (H)"}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <PointInput
+              label={lang === "zh" ? "頂點 A" : "Vertex A"}
+              color="#2563EB"
+              value={ptA}
+              onChange={(i, v) => { const n = parseFloat(v); setPtA(prev => prev.map((x, idx) => idx === i ? (isNaN(n) ? 0 : n) : x)); setCenterResult(null); }}
+              labels={labels3D}
+            />
+            <PointInput
+              label={lang === "zh" ? "頂點 B" : "Vertex B"}
+              color="#DC2626"
+              value={ptB}
+              onChange={(i, v) => { const n = parseFloat(v); setPtB(prev => prev.map((x, idx) => idx === i ? (isNaN(n) ? 0 : n) : x)); setCenterResult(null); }}
+              labels={labels3D}
+            />
+            <PointInput
+              label={lang === "zh" ? "頂點 C" : "Vertex C"}
+              color="#16A34A"
+              value={ptC}
+              onChange={(i, v) => { const n = parseFloat(v); setPtC(prev => prev.map((x, idx) => idx === i ? (isNaN(n) ? 0 : n) : x)); setCenterResult(null); }}
+              labels={labels3D}
+            />
+          </div>
+
+          <div className="flex gap-3">
+            <Button onClick={handleComputeCenters} className="font-mono">
+              {lang === "zh" ? "計算四心" : "Compute Centers"}
+            </Button>
+            <Button variant="outline" onClick={handleResetCenters} className="font-mono">
+              {t.reset}
+            </Button>
+          </div>
+
+          {centerError && (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive">
+              <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <p className="text-sm">{centerError}</p>
+            </div>
+          )}
+
+          {centerResult && (
+            <div className="space-y-4">
+              {/* Summary table */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+                {[
+                  {
+                    name: lang === "zh" ? "重心 G" : "Centroid G",
+                    desc: lang === "zh" ? "三條中線的交點" : "Intersection of medians",
+                    pt: centerResult.centroid,
+                    color: "#7C3AED",
+                    symbol: "G",
+                  },
+                  {
+                    name: lang === "zh" ? "內心 I" : "Incenter I",
+                    desc: lang === "zh" ? "三條角平分線的交點（內切圓圓心）" : "Intersection of angle bisectors",
+                    pt: centerResult.incenter,
+                    color: "#D97706",
+                    symbol: "I",
+                  },
+                  {
+                    name: lang === "zh" ? "外心 O" : "Circumcenter O",
+                    desc: lang === "zh" ? "三條垂直平分線的交點（外接圓圓心）" : "Intersection of perpendicular bisectors",
+                    pt: centerResult.circumcenter,
+                    color: "#0891B2",
+                    symbol: "O",
+                  },
+                  {
+                    name: lang === "zh" ? "垂心 H" : "Orthocenter H",
+                    desc: lang === "zh" ? "三條高的交點" : "Intersection of altitudes",
+                    pt: centerResult.orthocenter,
+                    color: "#DC2626",
+                    symbol: "H",
+                  },
+                ].map(({ name, desc, pt, color, symbol }) => (
+                  <div key={symbol} className="p-3 rounded-lg border bg-card space-y-2" style={{ borderColor: color + "40" }}>
+                    <div className="flex items-center gap-2">
+                      <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0" style={{ background: color }}>
+                        {symbol}
+                      </span>
+                      <span className="text-sm font-semibold text-foreground">{name}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{desc}</p>
+                    <div className="overflow-x-auto">
+                      <KatexRenderer
+                        latex={`${symbol} = ${fmtPt(pt)}`}
+                        displayMode={false}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Side lengths */}
+              <div className="p-3 rounded-lg border border-border bg-secondary/30">
+                <p className="text-xs font-semibold font-mono uppercase tracking-wide text-muted-foreground mb-2">
+                  {lang === "zh" ? "邊長" : "Side Lengths"}
+                </p>
+                <KatexRenderer
+                  latex={`a=|BC|=${fmt(centerResult.sideA)},\\quad b=|CA|=${fmt(centerResult.sideB)},\\quad c=|AB|=${fmt(centerResult.sideC)}`}
+                  displayMode={true}
+                />
+              </div>
+
+              {/* Steps */}
+              <StepDisplay
+                steps={centerResult.steps.map((s: any) => ({
+                  description: lang === "zh" ? s.descriptionZh : s.descriptionEn,
+                  latex: s.latex,
+                }))}
+                title={lang === "zh" ? "推導步驟" : "Derivation Steps"}
+              />
+            </div>
+          )}
+        </TabsContent>
+
+        {/* ── Calculator Tab ── */}
         <TabsContent value="calc" className="mt-4">
 
       {/* Dimension toggle */}

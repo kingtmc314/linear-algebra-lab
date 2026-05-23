@@ -226,10 +226,18 @@ export default function MatrixPage() {
                 label={`${lang === "zh" ? "矩陣" : "Matrix"} ${matrixLabels[idx] ?? idx + 1}`}
                 rows={m.rows}
                 cols={m.cols}
-                onRowsChange={(r) => resizeMatrix(m.id, r, m.cols)}
-                onColsChange={(c) => resizeMatrix(m.id, m.rows, c)}
+                onRowsChange={(r) => {
+                  // For square-required ops, keep rows === cols
+                  if (opInfo.needsSquare) resizeMatrix(m.id, r, r);
+                  else resizeMatrix(m.id, r, m.cols);
+                }}
+                onColsChange={(c) => {
+                  if (opInfo.needsSquare) resizeMatrix(m.id, c, c);
+                  else resizeMatrix(m.id, m.rows, c);
+                }}
                 rowsLabel={t.matrixRows}
                 colsLabel={t.matrixCols}
+                squareOnly={opInfo.needsSquare}
               />
               {opInfo.needsMulti && matrices.length > 2 && (
                 <button
