@@ -12,6 +12,7 @@ type Translations = {
   navVector: string;
   navKnowledge: string;
   navEigen: string;
+  navTransformation: string;
   // Matrix module
   matrixCalc: string;
   matrixA: string;
@@ -106,6 +107,7 @@ const zh: Translations = {
   navVector: "向量",
   navKnowledge: "知識點庫",
   navEigen: "特徵值與特徵向量",
+  navTransformation: "幾何變換",
   matrixCalc: "矩陣計算",
   matrixA: "矩陣 A",
   matrixB: "矩陣 B",
@@ -193,6 +195,7 @@ const en: Translations = {
   navVector: "Vectors",
   navKnowledge: "Knowledge Base",
   navEigen: "Eigenvalues & Eigenvectors",
+  navTransformation: "Transformations",
   matrixCalc: "Matrix Calculator",
   matrixA: "Matrix A",
   matrixB: "Matrix B",

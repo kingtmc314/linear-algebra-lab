@@ -157,3 +157,22 @@
 - [x] 新增 HomePage.tsx：首頁功能概覽（修復 GitHub Pages 根路徑 404）
 - [x] matrixPower.ts 已有完整精確值系統（fmtExact, toFrac, fmtPower），無需修改
 - [x] 所有 20 個測試通過，TypeScript 無錯誤
+
+## Phase 16: Transformation Module + Homepage Fix
+
+- [x] Fix homepage Feature Modules: bilingual examples tags and add Transformation card
+- [x] Add navTransformation key to LanguageContext (zh/en)
+- [x] Create TransformationPage.tsx: preset picker + custom matrix input, resulting matrix display, step-by-step panel, interactive 2D Plotly chart (unit square + unit circle + custom vectors before/after)
+- [x] 2D transforms: Rotation, Reflection (x/y/y=x/y=-x/any line), Shear (H/V), Scaling, Squeeze, Projection
+- [x] 3D transforms: Rotation (x/y/z axis), Scaling, Reflection (xy plane)
+- [x] Custom 2×2 matrix input with live chart update
+- [x] Custom vector panel: apply transform to user-input vector, show exact result
+- [x] Wire /transformation route in App.tsx and add to sidebar nav (Move icon)
+- [x] TypeScript clean, all 20 tests pass
+
+## Phase 16b: Matrix Calculator Redesign (Free-form Expression)
+
+- [x] Create matrixExprParser.ts: tokeniser + recursive-descent parser for expressions like A-1/2*B+C, A^(-1), det(A), A^T
+- [x] Support operations: +, -, *, scalar (fraction/integer), inverse (A^(-1) or inv(A)), transpose (A^T or A'), det(A), power A^n
+- [x] Redesign MatrixPage: add Expression tab with choose number of matrices (2–6), label A-Z with custom rows/cols and grid input, expression text field, exact result + step-by-step
+- [x] All results in exact rational form (fractions, not decimals)

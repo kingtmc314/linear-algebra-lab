@@ -6,7 +6,7 @@
 
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useLocation } from "wouter";
-import { Grid3X3, Sigma, ArrowRight, Sparkles, Zap, BookOpen, Calculator, ChevronRight } from "lucide-react";
+import { Grid3X3, Sigma, ArrowRight, Sparkles, Zap, BookOpen, Calculator, ChevronRight, Move } from "lucide-react";
 
 interface Feature {
   icon: React.ReactNode;
@@ -16,7 +16,9 @@ interface Feature {
   descEn: string;
   path: string;
   color: string;
-  examples: string[];
+  examplesZh?: string[];
+  examplesEn?: string[];
+  examples?: string[]; // legacy fallback
 }
 
 const FEATURES: Feature[] = [
@@ -28,7 +30,8 @@ const FEATURES: Feature[] = [
     descEn: "Matrix add/sub/multiply, transpose, determinant, inverse, scalar multiplication. All results in exact fractions with step-by-step Gauss-Jordan elimination.",
     path: "/matrix",
     color: "#3b82f6",
-    examples: ["A + B", "det(A)", "A⁻¹", "A × B"],
+    examplesZh: ["A + B", "det(A)", "A⁻¹", "A × B"],
+    examplesEn: ["A + B", "det(A)", "A⁻¹", "A × B"],
   },
   {
     icon: <Sigma className="w-6 h-6" />,
@@ -38,7 +41,8 @@ const FEATURES: Feature[] = [
     descEn: "Solve 2×2 to 4×4 linear systems with unique, no solution, or infinite solutions (k-parameter). Shows both Gaussian elimination and inverse matrix methods with exact fraction solutions.",
     path: "/system",
     color: "#8b5cf6",
-    examples: ["唯一解", "無窮多解", "k 通解", "逆矩陣法"],
+    examplesZh: ["唯一解", "無窮多解", "k 通解", "逆矩陣法"],
+    examplesEn: ["Unique Sol.", "Inf. Solutions", "k-param", "Inverse Method"],
   },
   {
     icon: <ArrowRight className="w-6 h-6" />,
@@ -48,7 +52,8 @@ const FEATURES: Feature[] = [
     descEn: "2D/3D vector add/sub, dot product, cross product, magnitude, angle, normalization, projection. Interactive Plotly.js charts with rotation/zoom for geometric visualization.",
     path: "/vector",
     color: "#10b981",
-    examples: ["a × b", "a · b", "投影", "3D 旋轉"],
+    examplesZh: ["a × b", "a · b", "投影", "3D 旋轉"],
+    examplesEn: ["a × b", "a · b", "Projection", "3D Rotation"],
   },
   {
     icon: <Sparkles className="w-6 h-6" />,
@@ -58,7 +63,8 @@ const FEATURES: Feature[] = [
     descEn: "Compute eigenvalues and eigenvectors for 2×2 and 3×3 matrices. Shows characteristic polynomial derivation with exact √ or fraction eigenvalues.",
     path: "/eigen",
     color: "#f59e0b",
-    examples: ["det(A−λI)=0", "特徵多項式", "精確根號", "特徵空間"],
+    examplesZh: ["det(A−λI)=0", "特徵多項式", "精確根號", "特徵空間"],
+    examplesEn: ["det(A−λI)=0", "Char. Poly", "Exact √", "Eigenspace"],
   },
   {
     icon: <Zap className="w-6 h-6" />,
@@ -68,7 +74,19 @@ const FEATURES: Feature[] = [
     descEn: "Compute A^n via diagonalization (A = PDP⁻¹ → A^n = PD^nP⁻¹). Step-by-step P, D, P⁻¹ computation with symbolic λ^n general formula.",
     path: "/matrix-power",
     color: "#ef4444",
-    examples: ["A = PDP⁻¹", "D^n", "λ^n 通式", "精確分數"],
+    examplesZh: ["A = PDP⁻¹", "D^n", "λ^n 通式", "精確分數"],
+    examplesEn: ["A = PDP⁻¹", "D^n", "λ^n formula", "Exact Fractions"],
+  },
+  {
+    icon: <Move className="w-6 h-6" />,
+    titleZh: "幾何變換",
+    titleEn: "Geometric Transformations",
+    descZh: "包含切變、擠壓、放大、縮小、平移、反射（x軸/y軸/任意直線）、旋轉（任意角度）。輸入矩陣可看變換後矩陣，配備互動 2D/3D 圖表。",
+    descEn: "Shear, squeeze, enlargement, reduction, translation, reflection (x/y/any line), rotation (any angle). Input a matrix to see the resulting transformed matrix with interactive 2D/3D charts.",
+    path: "/transformation",
+    color: "#ec4899",
+    examplesZh: ["旋轉", "反射", "切變", "平移"],
+    examplesEn: ["Rotation", "Reflection", "Shear", "Translation"],
   },
   {
     icon: <BookOpen className="w-6 h-6" />,
@@ -78,7 +96,8 @@ const FEATURES: Feature[] = [
     descEn: "Core linear algebra concepts: matrix operations, determinant properties, linear systems, eigenvalue theory, vector spaces. Each topic includes definitions, theorems, and examples.",
     path: "/knowledge",
     color: "#06b6d4",
-    examples: ["定義", "定理", "例題", "公式"],
+    examplesZh: ["定義", "定理", "例題", "公式"],
+    examplesEn: ["Definitions", "Theorems", "Examples", "Formulas"],
   },
 ];
 
@@ -208,7 +227,7 @@ export default function HomePage() {
 
               {/* Example tags */}
               <div className="flex flex-wrap gap-1.5">
-                {feature.examples.map((ex) => (
+                {(lang === "zh" ? (feature.examplesZh ?? feature.examples ?? []) : (feature.examplesEn ?? feature.examples ?? [])).map((ex) => (
                   <span
                     key={ex}
                     className="px-2 py-0.5 rounded text-xs font-mono"
