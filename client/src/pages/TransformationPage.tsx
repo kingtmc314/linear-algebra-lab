@@ -25,22 +25,108 @@ import Plotly from "plotly.js-dist-min";
 
 const DEG = Math.PI / 180;
 
+/**
+ * fmt — exact LaTeX representation of a number.
+ * Handles integers, simple fractions, and k*√2/2, k*√3/2, k*√2, k*√3 forms.
+ */
 function fmt(n: number): string {
   if (Math.abs(n) < 1e-10) return "0";
   if (Math.abs(n - Math.round(n)) < 1e-10) return String(Math.round(n));
-  // Try simple fractions
-  const fracs: [number, string][] = [
-    [0.5, "\\frac{1}{2}"], [-0.5, "-\\frac{1}{2}"],
-    [1/3, "\\frac{1}{3}"], [-1/3, "-\\frac{1}{3}"],
-    [2/3, "\\frac{2}{3}"], [-2/3, "-\\frac{2}{3}"],
-    [Math.SQRT1_2, "\\frac{\\sqrt{2}}{2}"], [-Math.SQRT1_2, "-\\frac{\\sqrt{2}}{2}"],
-    [Math.sqrt(3)/2, "\\frac{\\sqrt{3}}{2}"], [-Math.sqrt(3)/2, "-\\frac{\\sqrt{3}}{2}"],
-    [0.25, "\\frac{1}{4}"], [-0.25, "-\\frac{1}{4}"],
-    [0.75, "\\frac{3}{4}"], [-0.75, "-\\frac{3}{4}"],
-  ];
-  for (const [val, str] of fracs) {
-    if (Math.abs(n - val) < 1e-8) return str;
+
+  const sign = n < 0 ? "-" : "";
+  const abs = Math.abs(n);
+
+  // k * √2 / 2  (e.g. 3√2/2, 7√2/2)
+  const s2h = Math.SQRT1_2; // √2/2
+  const k2h = abs / s2h;
+  if (Math.abs(k2h - Math.round(k2h)) < 1e-8 && Math.round(k2h) !== 0) {
+    const k = Math.round(k2h);
+    const num = k === 1 ? "\\sqrt{2}" : `${k}\\sqrt{2}`;
+    return `${sign}\\frac{${num}}{2}`;
   }
+
+  // k * √3 / 2  (e.g. 3√3/2)
+  const s3h = Math.sqrt(3) / 2;
+  const k3h = abs / s3h;
+  if (Math.abs(k3h - Math.round(k3h)) < 1e-8 && Math.round(k3h) !== 0) {
+    const k = Math.round(k3h);
+    const num = k === 1 ? "\\sqrt{3}" : `${k}\\sqrt{3}`;
+    return `${sign}\\frac{${num}}{2}`;
+  }
+
+  // k * √2  (e.g. 2√2, 3√2)
+  const s2 = Math.SQRT2;
+  const k2 = abs / s2;
+  if (Math.abs(k2 - Math.round(k2)) < 1e-8 && Math.round(k2) !== 0) {
+    const k = Math.round(k2);
+    return k === 1 ? `${sign}\\sqrt{2}` : `${sign}${k}\\sqrt{2}`;
+  }
+
+  // k * √3  (e.g. 2√3)
+  const s3 = Math.sqrt(3);
+  const k3 = abs / s3;
+  if (Math.abs(k3 - Math.round(k3)) < 1e-8 && Math.round(k3) !== 0) {
+    const k = Math.round(k3);
+    return k === 1 ? `${sign}\\sqrt{3}` : `${sign}${k}\\sqrt{3}`;
+  }
+
+  // Simple fractions p/q where q ∈ {2,3,4,6,8,12}
+  for (const q of [2, 3, 4, 6, 8, 12]) {
+    const p = Math.round(abs * q);
+    if (Math.abs(abs - p / q) < 1e-8 && p !== 0) {
+      const g = gcd(p, q);
+      const pR = p / g, qR = q / g;
+      return qR === 1 ? `${sign}${pR}` : `${sign}\\frac{${pR}}{${qR}}`;
+    }
+  }
+
+  return n.toFixed(4).replace(/\.?0+$/, "");
+}
+
+function gcd(a: number, b: number): number {
+  return b === 0 ? a : gcd(b, a % b);
+}
+
+/**
+ * fmtPlain — plain-text (no LaTeX) representation for Plotly legend labels.
+ */
+function fmtPlain(n: number): string {
+  if (Math.abs(n) < 1e-10) return "0";
+  if (Math.abs(n - Math.round(n)) < 1e-10) return String(Math.round(n));
+
+  const sign = n < 0 ? "-" : "";
+  const abs = Math.abs(n);
+
+  const s2h = Math.SQRT1_2;
+  const k2h = abs / s2h;
+  if (Math.abs(k2h - Math.round(k2h)) < 1e-8 && Math.round(k2h) !== 0) {
+    const k = Math.round(k2h);
+    return k === 1 ? `${sign}\u221a2/2` : `${sign}${k}\u221a2/2`;
+  }
+
+  const s3h = Math.sqrt(3) / 2;
+  const k3h = abs / s3h;
+  if (Math.abs(k3h - Math.round(k3h)) < 1e-8 && Math.round(k3h) !== 0) {
+    const k = Math.round(k3h);
+    return k === 1 ? `${sign}\u221a3/2` : `${sign}${k}\u221a3/2`;
+  }
+
+  const s2 = Math.SQRT2;
+  const k2 = abs / s2;
+  if (Math.abs(k2 - Math.round(k2)) < 1e-8 && Math.round(k2) !== 0) {
+    const k = Math.round(k2);
+    return k === 1 ? `${sign}\u221a2` : `${sign}${k}\u221a2`;
+  }
+
+  for (const q of [2, 3, 4, 6, 8, 12]) {
+    const p = Math.round(abs * q);
+    if (Math.abs(abs - p / q) < 1e-8 && p !== 0) {
+      const g = gcd(p, q);
+      const pR = p / g, qR = q / g;
+      return qR === 1 ? `${sign}${pR}` : `${sign}${pR}/${qR}`;
+    }
+  }
+
   return n.toFixed(4).replace(/\.?0+$/, "");
 }
 
@@ -590,14 +676,14 @@ function Plot2D({ matrix, lang, title }: Plot2DProps) {
       // Ae1 vector
       {
         x: [0, e1T[0]], y: [0, e1T[1]],
-        mode: "lines+markers", name: `Ae₁ = (${fmt(e1T[0])}, ${fmt(e1T[1])})`,
+        mode: "lines+markers", name: `Ae₁ = (${fmtPlain(e1T[0])}, ${fmtPlain(e1T[1])})`,
         line: { color: "#ef4444", width: 2.5 },
         marker: { size: [0, 8], color: "#ef4444", symbol: "arrow-up" },
       },
       // Ae2 vector
       {
         x: [0, e2T[0]], y: [0, e2T[1]],
-        mode: "lines+markers", name: `Ae₂ = (${fmt(e2T[0])}, ${fmt(e2T[1])})`,
+        mode: "lines+markers", name: `Ae₂ = (${fmtPlain(e2T[0])}, ${fmtPlain(e2T[1])})`,
         line: { color: "#22c55e", width: 2.5 },
         marker: { size: [0, 8], color: "#22c55e", symbol: "arrow-up" },
       },
