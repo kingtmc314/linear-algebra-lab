@@ -164,6 +164,8 @@ interface TransformDef {
   nameEn: string;
   params: ParamDef[];
   matrix: (params: Record<string, number>) => number[][];
+  /** Optional symbolic LaTeX for the matrix display (e.g. cos θ instead of 0.1219) */
+  symbolicLatex?: (params: Record<string, number>) => string;
   latexZh: (params: Record<string, number>) => string;
   latexEn: (params: Record<string, number>) => string;
   stepsZh: (params: Record<string, number>, M: number[][]) => string[];
@@ -193,6 +195,20 @@ const TRANSFORMS: TransformDef[] = [
     matrix: ({ theta }) => {
       const t = theta * DEG;
       return [[Math.cos(t), -Math.sin(t)], [Math.sin(t), Math.cos(t)]];
+    },
+    symbolicLatex: ({ theta }) => {
+      const c = fmt(Math.cos(theta * DEG));
+      const s = fmt(Math.sin(theta * DEG));
+      const sNeg = fmt(-Math.sin(theta * DEG));
+      // If fmt returned exact values, show them; otherwise show cos/sin notation
+      const isExact = (v: number) => {
+        const f = fmt(v);
+        return !f.includes(".");
+      };
+      if (isExact(Math.cos(theta * DEG)) && isExact(Math.sin(theta * DEG))) {
+        return `A = \\begin{bmatrix} ${c} & ${sNeg} \\\\ ${s} & ${c} \\end{bmatrix}`;
+      }
+      return `A = \\begin{bmatrix} \\cos(${theta}°) & -\\sin(${theta}°) \\\\ \\sin(${theta}°) & \\cos(${theta}°) \\end{bmatrix}`;
     },
     latexZh: ({ theta }) => `逆時針旋轉 ${theta}°`,
     latexEn: ({ theta }) => `Counter-clockwise rotation by ${theta}°`,
@@ -306,6 +322,16 @@ const TRANSFORMS: TransformDef[] = [
     matrix: ({ alpha }) => {
       const a = 2 * alpha * DEG;
       return [[Math.cos(a), Math.sin(a)], [Math.sin(a), -Math.cos(a)]];
+    },
+    symbolicLatex: ({ alpha }) => {
+      const a2 = 2 * alpha;
+      const c = fmt(Math.cos(2 * alpha * DEG));
+      const s = fmt(Math.sin(2 * alpha * DEG));
+      const isExact = (v: number) => !fmt(v).includes(".");
+      if (isExact(Math.cos(2*alpha*DEG)) && isExact(Math.sin(2*alpha*DEG))) {
+        return `A = \\begin{bmatrix} ${c} & ${s} \\\\ ${s} & -${c} \\end{bmatrix}`;
+      }
+      return `A = \\begin{bmatrix} \\cos(${a2}°) & \\sin(${a2}°) \\\\ \\sin(${a2}°) & -\\cos(${a2}°) \\end{bmatrix}`;
     },
     latexZh: ({ alpha }) => `關於通過原點、角度為 ${alpha}° 的直線的反射`,
     latexEn: ({ alpha }) => `Reflection about the line through origin at angle ${alpha}°`,
@@ -623,9 +649,11 @@ interface Plot2DProps {
   matrix: number[][];
   lang: "zh" | "en";
   title?: string;
+  customVec?: [number, number] | null;
+  det?: number | null;
 }
 
-function Plot2D({ matrix, lang, title }: Plot2DProps) {
+function Plot2D({ matrix, lang, title, customVec, det }: Plot2DProps) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -646,6 +674,10 @@ function Plot2D({ matrix, lang, title }: Plot2DProps) {
     // Basis vectors
     const e1T = applyTransform(matrix, [1,0]);
     const e2T = applyTransform(matrix, [0,1]);
+
+    // Custom vector and its image
+    const cv = customVec ?? null;
+    const cvT = cv ? applyTransform(matrix, cv) : null;
 
     const traces: Plotly.Data[] = [
       // Original square
@@ -689,20 +721,79 @@ function Plot2D({ matrix, lang, title }: Plot2DProps) {
       },
     ];
 
+    // Custom vector v (grey) and Av (orange)
+    const annotations: Partial<Plotly.Annotations>[] = [];
+
+    if (cv && cvT) {
+      // v arrow
+      traces.push({
+        x: [0, cv[0]], y: [0, cv[1]],
+        mode: "lines+markers",
+        name: `v = (${fmtPlain(cv[0])}, ${fmtPlain(cv[1])})`,
+        line: { color: "#64748b", width: 2, dash: "dot" },
+        marker: { size: [0, 8], color: "#64748b" },
+      });
+      // Av arrow
+      traces.push({
+        x: [0, cvT[0]], y: [0, cvT[1]],
+        mode: "lines+markers",
+        name: `Av = (${fmtPlain(cvT[0])}, ${fmtPlain(cvT[1])})`,
+        line: { color: "#f97316", width: 2.5 },
+        marker: { size: [0, 8], color: "#f97316" },
+      });
+      // Arrowhead annotations for v and Av
+      annotations.push(
+        {
+          x: cv[0], y: cv[1], ax: 0, ay: 0,
+          xref: "x", yref: "y", axref: "x", ayref: "y",
+          showarrow: true, arrowhead: 3, arrowsize: 1.2, arrowwidth: 2, arrowcolor: "#64748b",
+          text: `  v=(${fmtPlain(cv[0])},${fmtPlain(cv[1])})`,
+          font: { size: 10, color: "#64748b" }, bgcolor: "rgba(255,255,255,0.7)",
+        },
+        {
+          x: cvT[0], y: cvT[1], ax: 0, ay: 0,
+          xref: "x", yref: "y", axref: "x", ayref: "y",
+          showarrow: true, arrowhead: 3, arrowsize: 1.2, arrowwidth: 2, arrowcolor: "#f97316",
+          text: `  Av=(${fmtPlain(cvT[0])},${fmtPlain(cvT[1])})`,
+          font: { size: 10, color: "#f97316" }, bgcolor: "rgba(255,255,255,0.7)",
+        }
+      );
+    }
+
+    // Determinant annotation (area scaling)
+    if (det !== null && det !== undefined) {
+      const detLabel = fmtPlain(det);
+      // Place near centre of transformed square
+      const cx = sqT.slice(0,4).reduce((s,v)=>s+v[0],0)/4;
+      const cy = sqT.slice(0,4).reduce((s,v)=>s+v[1],0)/4;
+      annotations.push({
+        x: cx, y: cy,
+        xref: "x", yref: "y",
+        text: `det = ${detLabel}`,
+        showarrow: false,
+        font: { size: 10, color: "#6366f1" },
+        bgcolor: "rgba(255,255,255,0.8)",
+        bordercolor: "#6366f1",
+        borderwidth: 1,
+        borderpad: 3,
+      });
+    }
+
     const layout: Partial<Plotly.Layout> = {
       title: { text: title || "", font: { size: 12 } },
       xaxis: { zeroline: true, zerolinecolor: "#64748b", zerolinewidth: 1.5, gridcolor: "#e2e8f0", title: { text: "x" } },
       yaxis: { zeroline: true, zerolinecolor: "#64748b", zerolinewidth: 1.5, gridcolor: "#e2e8f0", title: { text: "y" }, scaleanchor: "x", scaleratio: 1 },
       showlegend: true,
       legend: { x: 1.02, y: 1, font: { size: 10 } },
-      margin: { l: 40, r: 120, t: 30, b: 40 },
+      margin: { l: 40, r: 140, t: 30, b: 40 },
       paper_bgcolor: "rgba(0,0,0,0)",
       plot_bgcolor: "rgba(0,0,0,0)",
       font: { family: "IBM Plex Mono, monospace", size: 11 },
+      annotations,
     };
 
     Plotly.react(ref.current, traces, layout, { responsive: true, displayModeBar: true });
-  }, [matrix, lang, title]);
+  }, [matrix, lang, title, customVec, det]);
 
   return <div ref={ref} style={{ width: "100%", height: 420 }} />;
 }
@@ -785,6 +876,11 @@ export default function TransformationPage() {
   const [selectedId, setSelectedId] = useState("rotate2d");
   const [params, setParams] = useState<Record<string, Record<string, number>>>({});
 
+  // Custom vector state lifted here so Plot2D can show v and Av
+  const [cvx, setCvx] = useState(1);
+  const [cvy, setCvy] = useState(0);
+  const [cvz, setCvz] = useState(0);
+
   const selected = TRANSFORMS.find(t => t.id === selectedId)!;
 
   const getParams = (id: string): Record<string, number> => {
@@ -810,6 +906,8 @@ export default function TransformationPage() {
   const det2d = selected.dim === "2d" && matrix.length === 2
     ? matrix[0][0]*matrix[1][1] - matrix[0][1]*matrix[1][0]
     : null;
+
+  const customVec2d: [number, number] | null = selected.dim === "2d" ? [cvx, cvy] : null;
 
   const categories = ["2D", "3D", "Custom"];
 
@@ -933,10 +1031,31 @@ export default function TransformationPage() {
                 </span>
               )}
             </div>
-            <KatexRenderer
-              latex={`A = ${matLatex(matrix)}`}
-              displayMode={true}
-            />
+            {selected.symbolicLatex ? (
+              <>
+                <KatexRenderer
+                  latex={selected.symbolicLatex(currentParams)}
+                  displayMode={true}
+                />
+                {/* Show numerical approximation below if symbolic differs from numerical */}
+                {selected.symbolicLatex(currentParams) !== `A = ${matLatex(matrix)}` && (
+                  <div className="mt-2">
+                    <p className="text-xs text-muted-foreground font-mono mb-1">
+                      {lang === "zh" ? "數值近似：" : "Numerical approximation:"}
+                    </p>
+                    <KatexRenderer
+                      latex={`A \\approx ${matLatex(matrix)}`}
+                      displayMode={true}
+                    />
+                  </div>
+                )}
+              </>
+            ) : (
+              <KatexRenderer
+                latex={`A = ${matLatex(matrix)}`}
+                displayMode={true}
+              />
+            )}
           </div>
 
           {/* Step-by-step derivation */}
@@ -977,7 +1096,7 @@ export default function TransformationPage() {
             </div>
             {selected.dim === "2d" ? (
               <>
-                <Plot2D matrix={matrix} lang={lang} />
+                <Plot2D matrix={matrix} lang={lang} customVec={customVec2d} det={det2d} />
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-3 text-xs font-mono text-muted-foreground">
                   <span className="flex items-center gap-1.5">
                     <span className="w-4 h-0.5 border-t border-dashed border-gray-400 inline-block" />
@@ -1023,7 +1142,13 @@ export default function TransformationPage() {
           </div>
 
           {/* Apply transform to custom vector */}
-          <CustomVectorPanel matrix={matrix} dim={selected.dim} lang={lang} />
+          <CustomVectorPanel
+            matrix={matrix}
+            dim={selected.dim}
+            lang={lang}
+            vx={cvx} vy={cvy} vz={cvz}
+            setVx={setCvx} setVy={setCvy} setVz={setCvz}
+          />
         </div>
       </div>
     </div>
@@ -1032,10 +1157,17 @@ export default function TransformationPage() {
 
 // ─── Custom Vector Panel ──────────────────────────────────────────────────────
 
-function CustomVectorPanel({ matrix, dim, lang }: { matrix: number[][]; dim: TransformDim; lang: "zh" | "en" }) {
-  const [vx, setVx] = useState(1);
-  const [vy, setVy] = useState(0);
-  const [vz, setVz] = useState(0);
+interface CustomVectorPanelProps {
+  matrix: number[][];
+  dim: TransformDim;
+  lang: "zh" | "en";
+  vx: number; vy: number; vz: number;
+  setVx: (v: number) => void;
+  setVy: (v: number) => void;
+  setVz: (v: number) => void;
+}
+
+function CustomVectorPanel({ matrix, dim, lang, vx, vy, vz, setVx, setVy, setVz }: CustomVectorPanelProps) {
 
   const result = dim === "2d"
     ? applyTransform(matrix, [vx, vy])
