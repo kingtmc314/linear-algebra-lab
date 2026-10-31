@@ -190,5 +190,5 @@
 - [x] 加入四心建構顯示：中線、高線、垂直平分線、角平分線、內／外接圓和 Euler 線
 - [x] 建立三角形四心模擬器：使用預設圖形與即時計算，支援中英雙語及 2D／3D 視圖
 - [x] 完成數學驗證、視覺驗證與 28 項測試
-- [ ] 儲存 Phase 18 checkpoint，記錄四心互動模擬器完成版本
-- [ ] 推送 Phase 18 變更到 GitHub main，並確認最新 GitHub Pages / Actions 部署成功
+- [x] 儲存 Phase 18 checkpoint，記錄四心互動模擬器完成版本
+- [x] 推送 Phase 18 變更到 GitHub main，並確認最新 GitHub Pages / Actions 部署成功
