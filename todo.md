@@ -176,3 +176,10 @@
 - [x] Support operations: +, -, *, scalar (fraction/integer), inverse (A^(-1) or inv(A)), transpose (A^T or A'), det(A), power A^n
 - [x] Redesign MatrixPage: add Expression tab with choose number of matrices (2–6), label A-Z with custom rows/cols and grid input, expression text field, exact result + step-by-step
 - [x] All results in exact rational form (fractions, not decimals)
+
+## Phase 17: DSE-Style Vector & Triangle-Centre Practice
+
+- [x] 建立 12 題原創 DSE 風格題庫：2D 向量、3D 向量、三角形四心各 4 題
+- [x] 新增題目分類、分數提示、答案核對與完整評分步驟（中英雙語）
+- [x] 將 DSE 題組整合至 VectorPage 練習模式，並加入題庫驗證測試
+- [x] 全部 24 項測試通過，TypeScript 無錯誤，已完成中英雙語視覺驗證

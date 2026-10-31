@@ -14,6 +14,7 @@ import { fmt, sqrtExact, angleExact } from "@/lib/matrixMath";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, CheckCircle2, Triangle, BarChart2 } from "lucide-react";
 import PracticePanel from "@/components/PracticePanel";
+import DseVectorPracticePanel from "@/components/DseVectorPracticePanel";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { generateRandomVectorQuestion } from "@/lib/practiceGenerator";
 
@@ -280,7 +281,15 @@ export default function VectorPage() {
             {lang === "zh" ? "三角形四心" : "Triangle Centers"}
           </TabsTrigger>
           <TabsTrigger value="practice">{t.practiceMode}</TabsTrigger>
+          <TabsTrigger value="dse">
+            {lang === "zh" ? "DSE Style 題組" : "DSE-Style Practice"}
+          </TabsTrigger>
         </TabsList>
+
+        {/* ── DSE-style Practice Tab ── */}
+        <TabsContent value="dse" className="mt-4">
+          <DseVectorPracticePanel />
+        </TabsContent>
 
         {/* ── Practice Tab ── */}
         <TabsContent value="practice" className="mt-4">
