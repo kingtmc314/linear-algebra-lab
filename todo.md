@@ -183,3 +183,12 @@
 - [x] 新增題目分類、分數提示、答案核對與完整評分步驟（中英雙語）
 - [x] 將 DSE 題組整合至 VectorPage 練習模式，並加入題庫驗證測試
 - [x] 全部 24 項測試通過，TypeScript 無錯誤，已完成中英雙語視覺驗證
+
+## Phase 18: Interactive Triangle-Centre Diagram & Simulator
+
+- [x] 新增可縮放／拖曳的三角形圖，動態標示 A、B、C、G、I、O、H
+- [x] 加入四心建構顯示：中線、高線、垂直平分線、角平分線、內／外接圓和 Euler 線
+- [x] 建立三角形四心模擬器：使用預設圖形與即時計算，支援中英雙語及 2D／3D 視圖
+- [x] 完成數學驗證、視覺驗證與 28 項測試
+- [ ] 儲存 Phase 18 checkpoint，記錄四心互動模擬器完成版本
+- [ ] 推送 Phase 18 變更到 GitHub main，並確認最新 GitHub Pages / Actions 部署成功

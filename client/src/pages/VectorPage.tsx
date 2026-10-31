@@ -6,9 +6,10 @@ import StepDisplay from "@/components/StepDisplay";
 import KatexRenderer from "@/components/KatexRenderer";
 import VectorPlot2D from "@/components/VectorPlot2D";
 import VectorPlot3D from "@/components/VectorPlot3D";
+import TriangleCentersPlot, { type TriangleLayerVisibility } from "@/components/TriangleCentersPlot";
 import {
   vecAdd, vecSub, vecDot, vecCross, vecMagnitude, vecAngle, vecNormalize,
-  vecProjection, vecToLatex, computeTriangleCenters, type Vec3,
+  vecProjection, vecToLatex, computeTriangleCenters, type TriangleCenterResult, type Vec3,
 } from "@/lib/vectorMath";
 import { fmt, sqrtExact, angleExact } from "@/lib/matrixMath";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,71 @@ const NEEDS_B: VecOp[] = ["add", "sub", "dot", "cross", "angle", "projection"];
 
 // Operations that benefit from interactive visualization
 const VIS_OPS: VecOp[] = ["add", "sub", "dot", "cross", "angle", "normalize", "projection"];
+
+type CentreView = "2d" | "3d";
+
+interface CentrePreset {
+  id: string;
+  zh: string;
+  en: string;
+  A: Vec3;
+  B: Vec3;
+  C: Vec3;
+  view: CentreView;
+}
+
+const CENTRE_PRESETS: CentrePreset[] = [
+  {
+    id: "right",
+    zh: "直角三角形（6–8–10）",
+    en: "Right triangle (6–8–10)",
+    A: [0, 0, 0], B: [6, 0, 0], C: [0, 8, 0], view: "2d",
+  },
+  {
+    id: "acute",
+    zh: "銳角三角形",
+    en: "Acute triangle",
+    A: [0, 0, 0], B: [6, 0, 0], C: [2, 5, 0], view: "2d",
+  },
+  {
+    id: "obtuse",
+    zh: "鈍角三角形",
+    en: "Obtuse triangle",
+    A: [0, 0, 0], B: [6, 0, 0], C: [1, 1.5, 0], view: "2d",
+  },
+  {
+    id: "space",
+    zh: "空間三角形",
+    en: "Triangle in space",
+    A: [1, 1, 1], B: [6, 1, 3], C: [2, 5, 4], view: "3d",
+  },
+];
+
+const DEFAULT_CENTRE_PRESET = CENTRE_PRESETS[0]!;
+const DEFAULT_CENTRE_LAYERS: TriangleLayerVisibility = {
+  medians: true,
+  altitudes: true,
+  perpendicularBisectors: true,
+  angleBisectors: true,
+  incircle: true,
+  circumcircle: true,
+  eulerLine: true,
+};
+
+const CENTRE_LAYER_OPTIONS: Array<{
+  key: keyof TriangleLayerVisibility;
+  zh: string;
+  en: string;
+  color: string;
+}> = [
+  { key: "medians", zh: "中線 → G", en: "Medians → G", color: "#7C3AED" },
+  { key: "altitudes", zh: "高線 → H", en: "Altitudes → H", color: "#DC2626" },
+  { key: "perpendicularBisectors", zh: "垂直平分線 → O", en: "Perp. bisectors → O", color: "#0891B2" },
+  { key: "angleBisectors", zh: "角平分線 → I", en: "Angle bisectors → I", color: "#D97706" },
+  { key: "incircle", zh: "內切圓", en: "Incircle", color: "#D97706" },
+  { key: "circumcircle", zh: "外接圓", en: "Circumcircle", color: "#0891B2" },
+  { key: "eulerLine", zh: "Euler 線", en: "Euler line", color: "#475569" },
+];
 
 function PointInput({
   label, color, value, onChange, labels,
@@ -117,11 +183,15 @@ export default function VectorPage() {
   const [error, setError] = useState<string | null>(null);
 
   // Triangle centers state
-  const [ptA, setPtA] = useState<number[]>([0, 0, 0]);
-  const [ptB, setPtB] = useState<number[]>([4, 0, 0]);
-  const [ptC, setPtC] = useState<number[]>([2, 3, 0]);
-  const [centerResult, setCenterResult] = useState<any>(null);
+  const [ptA, setPtA] = useState<Vec3>(DEFAULT_CENTRE_PRESET.A);
+  const [ptB, setPtB] = useState<Vec3>(DEFAULT_CENTRE_PRESET.B);
+  const [ptC, setPtC] = useState<Vec3>(DEFAULT_CENTRE_PRESET.C);
+  const [centerResult, setCenterResult] = useState<TriangleCenterResult | null>(() =>
+    computeTriangleCenters(DEFAULT_CENTRE_PRESET.A, DEFAULT_CENTRE_PRESET.B, DEFAULT_CENTRE_PRESET.C)
+  );
   const [centerError, setCenterError] = useState<string | null>(null);
+  const [centreView, setCentreView] = useState<CentreView>(DEFAULT_CENTRE_PRESET.view);
+  const [centreLayers, setCentreLayers] = useState<TriangleLayerVisibility>(DEFAULT_CENTRE_LAYERS);
 
   function switchDim(d: Dim) {
     setDim(d);
@@ -180,13 +250,9 @@ export default function VectorPage() {
     setError(null);
   }
 
-  function handleComputeCenters() {
+  function recomputeCenters(A: Vec3, B: Vec3, C: Vec3) {
     setCenterError(null);
-    setCenterResult(null);
     try {
-      const A = ptA as Vec3;
-      const B = ptB as Vec3;
-      const C = ptC as Vec3;
       const AB = [B[0]-A[0], B[1]-A[1], B[2]-A[2]];
       const AC = [C[0]-A[0], C[1]-A[1], C[2]-A[2]];
       const cross = [
@@ -196,6 +262,7 @@ export default function VectorPage() {
       ];
       const area = Math.sqrt(cross[0]**2 + cross[1]**2 + cross[2]**2);
       if (area < 1e-10) {
+        setCenterResult(null);
         setCenterError(lang === "zh" ? "三點共線，無法構成三角形" : "Three points are collinear — cannot form a triangle");
         return;
       }
@@ -206,12 +273,34 @@ export default function VectorPage() {
     }
   }
 
+  function handleComputeCenters() {
+    recomputeCenters(ptA, ptB, ptC);
+  }
+
+  function handleCentrePointChange(vertex: "A" | "B" | "C", index: number, value: string) {
+    const parsed = parseFloat(value);
+    const coordinate = isNaN(parsed) ? 0 : parsed;
+    const updatePoint = (point: Vec3): Vec3 => point.map((entry, pointIndex) => pointIndex === index ? coordinate : entry) as Vec3;
+    const nextA = vertex === "A" ? updatePoint(ptA) : ptA;
+    const nextB = vertex === "B" ? updatePoint(ptB) : ptB;
+    const nextC = vertex === "C" ? updatePoint(ptC) : ptC;
+    if (vertex === "A") setPtA(nextA);
+    if (vertex === "B") setPtB(nextB);
+    if (vertex === "C") setPtC(nextC);
+    recomputeCenters(nextA, nextB, nextC);
+  }
+
+  function handleCentrePreset(preset: CentrePreset) {
+    setPtA(preset.A);
+    setPtB(preset.B);
+    setPtC(preset.C);
+    setCentreView(preset.view);
+    recomputeCenters(preset.A, preset.B, preset.C);
+  }
+
   function handleResetCenters() {
-    setPtA([0, 0, 0]);
-    setPtB([4, 0, 0]);
-    setPtC([2, 3, 0]);
-    setCenterResult(null);
-    setCenterError(null);
+    handleCentrePreset(DEFAULT_CENTRE_PRESET);
+    setCentreLayers(DEFAULT_CENTRE_LAYERS);
   }
 
   const opLabels: Record<VecOp, string> = {
@@ -309,26 +398,99 @@ export default function VectorPage() {
             </p>
           </div>
 
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+            <div className="p-4 rounded-xl border border-border bg-card space-y-3">
+              <div>
+                <p className="text-sm font-semibold text-foreground">
+                  {lang === "zh" ? "四心模擬器" : "Triangle-centre simulator"}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {lang === "zh"
+                    ? "選擇圖形或直接修改頂點；圖表及四心會即時重新計算。"
+                    : "Choose a shape or edit the vertices; the diagram and all four centres update instantly."}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {CENTRE_PRESETS.map((preset) => {
+                  const active = ptA.join(",") === preset.A.join(",") && ptB.join(",") === preset.B.join(",") && ptC.join(",") === preset.C.join(",");
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => handleCentrePreset(preset)}
+                      className={`rounded-md border px-3 py-1.5 text-xs font-mono transition-all duration-150 ${
+                        active ? "bg-primary text-primary-foreground border-primary" : "bg-secondary/30 text-foreground border-border hover:border-primary/50"
+                      }`}
+                    >
+                      {lang === "zh" ? preset.zh : preset.en}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {(["2d", "3d"] as CentreView[]).map((view) => (
+                  <button
+                    key={view}
+                    type="button"
+                    onClick={() => setCentreView(view)}
+                    className={`rounded-md border px-3 py-1.5 text-xs font-mono font-semibold transition-all duration-150 ${
+                      centreView === view ? "bg-slate-700 text-white border-slate-700" : "bg-background text-foreground border-border hover:border-primary/50"
+                    }`}
+                  >
+                    {view === "2d" ? (lang === "zh" ? "平面建構圖" : "2D construction") : (lang === "zh" ? "三維座標圖" : "3D coordinate view")}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="p-4 rounded-xl border border-border bg-card space-y-3">
+              <div>
+                <p className="text-sm font-semibold text-foreground">
+                  {lang === "zh" ? "顯示建構" : "Construction layers"}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {lang === "zh" ? "逐一開關建構線，觀察每個中心如何形成。" : "Toggle each construction to see how every centre is formed."}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {CENTRE_LAYER_OPTIONS.map(({ key, zh, en, color }) => (
+                  <button
+                    key={key}
+                    type="button"
+                    aria-pressed={centreLayers[key]}
+                    onClick={() => setCentreLayers((previous) => ({ ...previous, [key]: !previous[key] }))}
+                    className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-mono transition-all duration-150 ${
+                      centreLayers[key] ? "border-primary/50 bg-primary/10 text-foreground" : "border-border bg-background text-muted-foreground hover:border-primary/40"
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full" style={{ background: color }} />
+                    {lang === "zh" ? zh : en}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <PointInput
               label={lang === "zh" ? "頂點 A" : "Vertex A"}
               color="#2563EB"
               value={ptA}
-              onChange={(i, v) => { const n = parseFloat(v); setPtA(prev => prev.map((x, idx) => idx === i ? (isNaN(n) ? 0 : n) : x)); setCenterResult(null); }}
+              onChange={(i, v) => handleCentrePointChange("A", i, v)}
               labels={labels3D}
             />
             <PointInput
               label={lang === "zh" ? "頂點 B" : "Vertex B"}
               color="#DC2626"
               value={ptB}
-              onChange={(i, v) => { const n = parseFloat(v); setPtB(prev => prev.map((x, idx) => idx === i ? (isNaN(n) ? 0 : n) : x)); setCenterResult(null); }}
+              onChange={(i, v) => handleCentrePointChange("B", i, v)}
               labels={labels3D}
             />
             <PointInput
               label={lang === "zh" ? "頂點 C" : "Vertex C"}
               color="#16A34A"
               value={ptC}
-              onChange={(i, v) => { const n = parseFloat(v); setPtC(prev => prev.map((x, idx) => idx === i ? (isNaN(n) ? 0 : n) : x)); setCenterResult(null); }}
+              onChange={(i, v) => handleCentrePointChange("C", i, v)}
               labels={labels3D}
             />
           </div>
@@ -347,6 +509,38 @@ export default function VectorPage() {
               <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
               <p className="text-sm">{centerError}</p>
             </div>
+          )}
+
+          {centerResult && !centerError && (
+            <section className="p-4 rounded-xl border border-border bg-card space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h2 className="text-sm font-semibold font-mono uppercase tracking-wide text-foreground">
+                    {lang === "zh" ? "互動式三角形四心圖" : "Interactive triangle-centre diagram"}
+                  </h2>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {centreView === "2d"
+                      ? (lang === "zh" ? "可縮放、拖曳及懸停查看各點坐標；非水平三角形會保留其真實平面形狀。" : "Zoom, pan and hover for coordinates; non-horizontal triangles retain their true planar shape.")
+                      : (lang === "zh" ? "可旋轉、縮放及查看所有點的真實 x、y、z 坐標。" : "Rotate, zoom and inspect the actual x, y and z coordinates of every point.")}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2 text-[11px] font-mono text-muted-foreground">
+                  <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-violet-600" />G</span>
+                  <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-600" />I</span>
+                  <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-cyan-600" />O</span>
+                  <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-600" />H</span>
+                </div>
+              </div>
+              <TriangleCentersPlot
+                A={ptA}
+                B={ptB}
+                C={ptC}
+                centers={centerResult}
+                lang={lang}
+                view={centreView}
+                layers={centreLayers}
+              />
+            </section>
           )}
 
           {centerResult && (
