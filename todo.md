@@ -214,8 +214,10 @@ Phase 19 GitHub sync verified: checkpoint 35f658b41e688ae28425581d6f9cd976454eaa
 - [x] 直線與平面夾角：方向向量與法向量，正確區分互餘角，精確式及 3D 圖
 - [x] 共用 3D 操作：標準視角、旋轉／平移、縮放、重設、投影、放大檢視和手機相容
 - [x] 全套測試、TypeScript、建置、桌面／手機操作驗收
-- [ ] checkpoint 後即時同步 GitHub，確認 Pages 部署
+- [x] checkpoint 後即時同步 GitHub，確認 Pages 部署
 
 Phase 20 verification: all 255 Vitest tests, TypeScript and GitHub Pages production build passed. The legacy documents-router test needed one network-timeout retry; no server changes were made. Actual browser checks passed for every calculator timeline, both system-method players, knowledge examples, random practice and DSE mark schemes. Desktop and 375px touch checks verified XY/YZ/XZ views, orbit/pan, zoom, fit/reset, perspective/orthographic, axes/grid/wheel toggles, expanded-view camera retention and focus return, and no horizontal overflow. Spatial checks covered synchronized construction stages, inclined and offset planes, supplementary opening, line–plane complementary angles, parallel/perpendicular presets, three-point/two-point definitions and invalid-normal recovery. Negative 3D vectors remained fully in range without camera resets. Existing four-centre keyboard/touch dragging and construction playback were preserved. Language selection now persists across reloads, and eigenvector formulas no longer contain mixed-language normalization labels.
 
 Precision scope: new vector and spatial-angle derivations use exact fractions, simplified radicals and symbolic inverse-trigonometric expressions. Plotly coordinates are numerical visualization values. Existing numerical eigenvalue/diagonalization outputs are explicitly labelled approximate, with eigenpair residual guards; this phase does not claim to replace those solvers with a fully symbolic engine.
+
+Phase 20 GitHub sync verified: feature checkpoint e7a11ebd4066d2f20f2f4e368c23ff68ea73d7ca was pushed immediately to GitHub main. GitHub Pages workflow 45211925206 completed successfully for the same SHA, and main was verified to match. This completed-record checkpoint is also pushed immediately after saving, with its own Pages deployment checked before delivery.
