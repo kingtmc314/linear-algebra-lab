@@ -192,3 +192,14 @@
 - [x] 完成數學驗證、視覺驗證與 28 項測試
 - [x] 儲存 Phase 18 checkpoint，記錄四心互動模擬器完成版本
 - [x] 推送 Phase 18 變更到 GitHub main，並確認最新 GitHub Pages / Actions 部署成功
+
+## Phase 19: Website Redesign, Vertex Dragging & Construction Playback
+
+- [x] 四心平面圖支援滑鼠／觸控拖曳 A、B、C，同步坐標與結果；非水平三角形保持所在平面
+- [x] 逐步建構播放：播放、暫停、重播、上一／下一步、速度和 LaTeX 步驟說明
+- [x] 重排四心工作台為圖表主區、輸入控制側欄及下方推導
+- [x] 全站更新首頁、分組導覽、視覺設計、間距與響應式版面；保留全部既有路由
+- [x] 測試拖曳、播放、退化三角形、雙語和桌面／手機畫面；執行 tests、TypeScript、production build
+- [ ] checkpoint 後即時同步 GitHub，確認 Pages 部署
+
+Phase 19 verification: 64 Vitest tests and TypeScript passed. Real browser checks passed for mouse and 375px touch vertex dragging, keyboard adjustments, true-plane 3D editing, animated construction drawing, play/pause/restart/single-step, invalid-input recovery, all routes, English copy, and mobile drawer navigation. GitHub Pages build passed with route-level lazy loading; homepage entry JS is separated from the 4.8 MB Plotly module.

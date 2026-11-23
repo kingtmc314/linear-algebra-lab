@@ -21,6 +21,7 @@ export interface TriangleCenterGeometry {
   inradius: number;
   circumradius: number;
   project: (point: Vec3) => Point2;
+  unproject: (point: Point2) => Vec3;
 }
 
 const EPSILON = 1e-10;
@@ -50,24 +51,24 @@ function cross(a: Vec3, b: Vec3): Vec3 {
 }
 
 function length(a: Vec3): number {
-  return Math.sqrt(dot(a, a));
+  return Math.hypot(...a);
 }
 
 function normalize(a: Vec3): Vec3 {
   const magnitude = length(a);
-  if (magnitude < EPSILON) throw new Error("Cannot normalize a zero vector");
+  if (!Number.isFinite(magnitude) || magnitude === 0) {
+    throw new Error("Cannot normalize a zero or non-finite vector");
+  }
   return scale(a, 1 / magnitude);
 }
 
 function midpoint(a: Vec3, b: Vec3): Vec3 {
-  return scale(add(a, b), 0.5);
+  return add(a, scale(sub(b, a), 0.5));
 }
 
 function footOnLine(point: Vec3, lineStart: Vec3, lineEnd: Vec3): Vec3 {
-  const direction = sub(lineEnd, lineStart);
-  const denominator = dot(direction, direction);
-  if (denominator < EPSILON) return lineStart;
-  return add(lineStart, scale(direction, dot(sub(point, lineStart), direction) / denominator));
+  const direction = normalize(sub(lineEnd, lineStart));
+  return add(lineStart, scale(direction, dot(sub(point, lineStart), direction)));
 }
 
 function pointToLineDistance(point: Vec3, lineStart: Vec3, lineEnd: Vec3): number {
@@ -81,10 +82,17 @@ function circlePoints(center: Vec3, radius: number, uAxis: Vec3, vAxis: Vec3, co
   });
 }
 
+function assertFinitePoint(point: Vec3): void {
+  if (point.length !== 3 || !point.every(Number.isFinite)) {
+    throw new Error("Triangle coordinates and centers must be finite 3D points");
+  }
+}
+
 /**
- * Produces mathematically exact construction geometry for a non-degenerate 3D triangle.
- * The returned projection is global x/y for a horizontal triangle and intrinsic plane
- * coordinates otherwise, so the 2D chart always preserves the triangle's real shape.
+ * Produces construction geometry for a non-degenerate 3D triangle. The numerical
+ * construction lines include their centers even when those centers are exterior.
+ * Projection is global x/y for a horizontal triangle and intrinsic plane coordinates
+ * otherwise, so the 2D chart preserves distances and angles in the actual plane.
  */
 export function buildTriangleCenterGeometry(
   A: Vec3,
@@ -92,10 +100,17 @@ export function buildTriangleCenterGeometry(
   C: Vec3,
   centers: TriangleCenterResult,
 ): TriangleCenterGeometry {
+  [A, B, C, centers.centroid, centers.incenter, centers.circumcenter, centers.orthocenter].forEach(assertFinitePoint);
   const AB = sub(B, A);
   const AC = sub(C, A);
-  const normal = normalize(cross(AB, AC));
-  const usesXYAxes = Math.abs(A[2] - B[2]) < EPSILON && Math.abs(A[2] - C[2]) < EPSILON;
+  // Normalizing the sides first avoids an area-based absolute tolerance, which
+  // would incorrectly reject small but perfectly valid triangles.
+  const planeNormal = cross(normalize(AB), normalize(AC));
+  if (length(planeNormal) === 0) throw new Error("Triangle vertices must not be collinear");
+  const normal = normalize(planeNormal);
+  // An almost-horizontal triangle is still tilted: using global axes in that
+  // case would put sampled circle points outside the actual triangle plane.
+  const usesXYAxes = A[2] === B[2] && A[2] === C[2];
   const uAxis: Vec3 = usesXYAxes ? [1, 0, 0] : normalize(AB);
   const vAxis: Vec3 = usesXYAxes ? [0, 1, 0] : normalize(cross(normal, uAxis));
 
@@ -104,23 +119,41 @@ export function buildTriangleCenterGeometry(
     const relative = sub(point, A);
     return [dot(relative, uAxis), dot(relative, vAxis)];
   };
+  const unproject = (point: Point2): Vec3 => usesXYAxes
+    ? [point[0], point[1], A[2]]
+    : add(A, add(scale(uAxis, point[0]), scale(vAxis, point[1])));
 
   const midAB = midpoint(A, B);
   const midBC = midpoint(B, C);
   const midCA = midpoint(C, A);
   const medians: Segment3[] = [[A, midBC], [B, midCA], [C, midAB]];
 
-  const footFromA = footOnLine(A, B, C);
-  const footFromB = footOnLine(B, C, A);
-  const footFromC = footOnLine(C, A, B);
-  const altitudes: Segment3[] = [[A, footFromA], [B, footFromB], [C, footFromC]];
+  const makeAltitude = (vertex: Vec3, sideStart: Vec3, sideEnd: Vec3): Segment3 => {
+    const foot = footOnLine(vertex, sideStart, sideEnd);
+    const direction = normalize(sub(foot, vertex));
+    const footDistance = length(sub(foot, vertex));
+    const hDistance = dot(sub(centers.orthocenter, vertex), direction);
+    // Project H onto the correct altitude instead of using H as an arbitrary
+    // endpoint. This keeps the rendered segment perpendicular despite rounding.
+    const start = hDistance < 0 ? add(vertex, scale(direction, hDistance)) : vertex;
+    const end = hDistance > footDistance ? add(vertex, scale(direction, hDistance)) : foot;
+    return [start, end];
+  };
+  const altitudes: Segment3[] = [
+    makeAltitude(A, B, C),
+    makeAltitude(B, C, A),
+    makeAltitude(C, A, B),
+  ];
 
   const longestSide = Math.max(length(AB), length(AC), length(sub(C, B)));
   const bisectorExtent = Math.max(1, longestSide * 0.58);
   const makePerpendicularBisector = (start: Vec3, end: Vec3): Segment3 => {
     const mid = midpoint(start, end);
     const perpendicular = normalize(cross(normal, sub(end, start)));
-    return [add(mid, scale(perpendicular, -bisectorExtent)), add(mid, scale(perpendicular, bisectorExtent))];
+    const oDistance = dot(sub(centers.circumcenter, mid), perpendicular);
+    const low = Math.min(-bisectorExtent, oDistance);
+    const high = Math.max(bisectorExtent, oDistance);
+    return [add(mid, scale(perpendicular, low)), add(mid, scale(perpendicular, high))];
   };
   const perpendicularBisectors: Segment3[] = [
     makePerpendicularBisector(A, B),
@@ -128,10 +161,18 @@ export function buildTriangleCenterGeometry(
     makePerpendicularBisector(C, A),
   ];
 
+  const makeAngleBisector = (vertex: Vec3, sideStart: Vec3, sideEnd: Vec3): Segment3 => {
+    const toStart = length(sub(sideStart, vertex));
+    const toEnd = length(sub(sideEnd, vertex));
+    // Internal angle-bisector theorem: BD/DC = AB/AC. The full
+    // vertex-to-opposite-side segment contains I and stays inside the triangle.
+    const intersection = add(sideStart, scale(sub(sideEnd, sideStart), toStart / (toStart + toEnd)));
+    return [vertex, intersection];
+  };
   const angleBisectors: Segment3[] = [
-    [A, centers.incenter],
-    [B, centers.incenter],
-    [C, centers.incenter],
+    makeAngleBisector(A, B, C),
+    makeAngleBisector(B, C, A),
+    makeAngleBisector(C, A, B),
   ];
 
   const inradius = pointToLineDistance(centers.incenter, A, B);
@@ -156,6 +197,7 @@ export function buildTriangleCenterGeometry(
     inradius,
     circumradius,
     project,
+    unproject,
   };
 }
 

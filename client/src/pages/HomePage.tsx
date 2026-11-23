@@ -1,299 +1,528 @@
-/**
- * HomePage.tsx
- * Landing page with feature overview for the Linear Algebra Lab webapp.
- * Bilingual (Chinese/English) with animated feature cards.
- */
-
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useLocation } from "wouter";
-import { Grid3X3, Sigma, ArrowRight, Sparkles, Zap, BookOpen, Calculator, ChevronRight, Move } from "lucide-react";
+import { Link } from "wouter";
+import {
+  ArrowRight,
+  ArrowUpRight,
+  BookOpen,
+  Compass,
+  GraduationCap,
+  Grid3X3,
+  Move,
+  Sigma,
+  Sparkles,
+  Triangle,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
 
-interface Feature {
-  icon: React.ReactNode;
+interface Tool {
+  icon: LucideIcon;
   titleZh: string;
   titleEn: string;
   descZh: string;
   descEn: string;
   path: string;
-  color: string;
-  examplesZh?: string[];
-  examplesEn?: string[];
-  examples?: string[]; // legacy fallback
+  formula: string;
 }
 
-const FEATURES: Feature[] = [
+const algebraTools: Tool[] = [
   {
-    icon: <Grid3X3 className="w-6 h-6" />,
+    icon: Grid3X3,
     titleZh: "矩陣計算",
-    titleEn: "Matrix Calculator",
-    descZh: "支援矩陣加減乘、轉置、行列式、逆矩陣、純量乘法。所有結果以精確分數表示，逐步展示高斯-喬登消去法。",
-    descEn: "Matrix add/sub/multiply, transpose, determinant, inverse, scalar multiplication. All results in exact fractions with step-by-step Gauss-Jordan elimination.",
+    titleEn: "Matrices",
+    descZh: "從基本運算到行列式與逆矩陣，探索矩陣的運算規則。",
+    descEn: "Explore matrix operations, determinants and inverses.",
     path: "/matrix",
-    color: "#3b82f6",
-    examplesZh: ["A + B", "det(A)", "A⁻¹", "A × B"],
-    examplesEn: ["A + B", "det(A)", "A⁻¹", "A × B"],
+    formula: "A + B · AB · A⁻¹",
   },
   {
-    icon: <Sigma className="w-6 h-6" />,
-    titleZh: "聯立方程組",
-    titleEn: "Linear Systems",
-    descZh: "求解 2×2 至 4×4 聯立方程組，支援唯一解、無解、無窮多解（k 通解）。同時顯示高斯消去法與逆矩陣法兩種解法，解以精確分數表示。",
-    descEn: "Solve 2×2 to 4×4 linear systems with unique, no solution, or infinite solutions (k-parameter). Shows both Gaussian elimination and inverse matrix methods with exact fraction solutions.",
+    icon: Sigma,
+    titleZh: "聯立方程",
+    titleEn: "Linear systems",
+    descZh: "輸入方程組，觀察消去步驟與不同的解的情況。",
+    descEn: "Follow elimination steps and examine different solution cases.",
     path: "/system",
-    color: "#8b5cf6",
-    examplesZh: ["唯一解", "無窮多解", "k 通解", "逆矩陣法"],
-    examplesEn: ["Unique Sol.", "Inf. Solutions", "k-param", "Inverse Method"],
+    formula: "Ax = b",
   },
   {
-    icon: <ArrowRight className="w-6 h-6" />,
-    titleZh: "向量計算",
-    titleEn: "Vector Calculator",
-    descZh: "支援 2D/3D 向量的加減、點積、叉積、模長、夾角、單位化、投影。配備 Plotly.js 互動圖表，可旋轉縮放，直觀呈現幾何意義。",
-    descEn: "2D/3D vector add/sub, dot product, cross product, magnitude, angle, normalization, projection. Interactive Plotly.js charts with rotation/zoom for geometric visualization.",
-    path: "/vector",
-    color: "#10b981",
-    examplesZh: ["a × b", "a · b", "投影", "3D 旋轉"],
-    examplesEn: ["a × b", "a · b", "Projection", "3D Rotation"],
-  },
-  {
-    icon: <Sparkles className="w-6 h-6" />,
-    titleZh: "特徵值與特徵向量",
-    titleEn: "Eigenvalues & Eigenvectors",
-    descZh: "計算 2×2 和 3×3 矩陣的特徵值與特徵向量，顯示特徵多項式推導過程，特徵值以精確根號或分數形式表示。",
-    descEn: "Compute eigenvalues and eigenvectors for 2×2 and 3×3 matrices. Shows characteristic polynomial derivation with exact √ or fraction eigenvalues.",
+    icon: Sparkles,
+    titleZh: "特徵值與向量",
+    titleEn: "Eigenvalues & vectors",
+    descZh: "由特徵多項式，找出矩陣變換中的不變方向。",
+    descEn: "Use the characteristic polynomial to find invariant directions.",
     path: "/eigen",
-    color: "#f59e0b",
-    examplesZh: ["det(A−λI)=0", "特徵多項式", "精確根號", "特徵空間"],
-    examplesEn: ["det(A−λI)=0", "Char. Poly", "Exact √", "Eigenspace"],
+    formula: "Av = λv",
   },
   {
-    icon: <Zap className="w-6 h-6" />,
+    icon: Zap,
     titleZh: "矩陣 n 次方",
-    titleEn: "Matrix Power A^n",
-    descZh: "利用對角化方法計算矩陣 A 的 n 次方（A = PDP⁻¹ → A^n = PD^nP⁻¹），逐步展示 P、D、P⁻¹ 的計算，並顯示符號式 λ^n 通式。",
-    descEn: "Compute A^n via diagonalization (A = PDP⁻¹ → A^n = PD^nP⁻¹). Step-by-step P, D, P⁻¹ computation with symbolic λ^n general formula.",
+    titleEn: "Matrix powers",
+    descZh: "以對角化理解重複的矩陣運算，探索 A 的 n 次方。",
+    descEn: "Explore repeated matrix operations through diagonalization.",
     path: "/matrix-power",
-    color: "#ef4444",
-    examplesZh: ["A = PDP⁻¹", "D^n", "λ^n 通式", "精確分數"],
-    examplesEn: ["A = PDP⁻¹", "D^n", "λ^n formula", "Exact Fractions"],
-  },
-  {
-    icon: <Move className="w-6 h-6" />,
-    titleZh: "幾何變換",
-    titleEn: "Geometric Transformations",
-    descZh: "包含切變、擠壓、放大、縮小、平移、反射（x軸/y軸/任意直線）、旋轉（任意角度）。輸入矩陣可看變換後矩陣，配備互動 2D/3D 圖表。",
-    descEn: "Shear, squeeze, enlargement, reduction, translation, reflection (x/y/any line), rotation (any angle). Input a matrix to see the resulting transformed matrix with interactive 2D/3D charts.",
-    path: "/transformation",
-    color: "#ec4899",
-    examplesZh: ["旋轉", "反射", "切變", "平移"],
-    examplesEn: ["Rotation", "Reflection", "Shear", "Translation"],
-  },
-  {
-    icon: <BookOpen className="w-6 h-6" />,
-    titleZh: "知識點庫",
-    titleEn: "Knowledge Base",
-    descZh: "涵蓋線性代數核心概念：矩陣運算、行列式性質、線性方程組、特徵值理論、向量空間。每個主題附有定義、定理與例題。",
-    descEn: "Core linear algebra concepts: matrix operations, determinant properties, linear systems, eigenvalue theory, vector spaces. Each topic includes definitions, theorems, and examples.",
-    path: "/knowledge",
-    color: "#06b6d4",
-    examplesZh: ["定義", "定理", "例題", "公式"],
-    examplesEn: ["Definitions", "Theorems", "Examples", "Formulas"],
+    formula: "Aⁿ = PDⁿP⁻¹",
   },
 ];
 
+const geometryTools: Tool[] = [
+  {
+    icon: Compass,
+    titleZh: "向量探索",
+    titleEn: "Vector exploration",
+    descZh: "計算點積、叉積與投影，連結代數運算和幾何圖像。",
+    descEn: "Connect dot products, cross products and projections to geometry.",
+    path: "/vector",
+    formula: "a · b = |a||b| cos θ",
+  },
+  {
+    icon: Move,
+    titleZh: "幾何變換",
+    titleEn: "Transformations",
+    descZh: "觀察旋轉、反射與切變，理解矩陣如何改變空間。",
+    descEn: "See how rotation, reflection and shear matrices reshape space.",
+    path: "/transformation",
+    formula: "x′ = Ax",
+  },
+];
+
+// Original deterministic illustration: equal x/y scales, actual medians and centroid.
+// Centroid convention: https://mathworld.wolfram.com/TriangleCentroid.html
+function TriangleDiagram({ lang }: { lang: "zh" | "en" }) {
+  const vertices = [
+    { x: 0, y: 0 },
+    { x: 6, y: 0 },
+    { x: 2, y: 4 },
+  ];
+  const sx = (x: number) => 68 + 48 * x;
+  const sy = (y: number) => 278 - 48 * y;
+  const centroid = {
+    x: vertices.reduce((sum, point) => sum + point.x, 0) / vertices.length,
+    y: vertices.reduce((sum, point) => sum + point.y, 0) / vertices.length,
+  };
+  return (
+    <figure className="home-diagram">
+      <div className="home-diagram-heading">
+        <span>{lang === "zh" ? "幾何筆記 / 01" : "Geometry notes / 01"}</span>
+        <span className="home-diagram-badge">△ ABC</span>
+      </div>
+      <svg
+        viewBox="0 0 440 338"
+        role="img"
+        aria-labelledby="triangle-illustration-title triangle-illustration-description"
+      >
+        <title id="triangle-illustration-title">
+          {lang === "zh"
+            ? "三角形的三條中線與重心"
+            : "Three medians and the centroid of a triangle"}
+        </title>
+        <desc id="triangle-illustration-description">
+          {lang === "zh"
+            ? "A 點座標為零、零；B 點為六、零；C 點為二、四。三條中線相交於重心 G，座標為三分之八、三分之四。此圖為靜態示意，開啟三角形實驗可進行探索。"
+            : "A is at (0, 0), B at (6, 0), and C at (2, 4). The medians meet at centroid G at (8/3, 4/3). This is a static illustration; open the triangle experiment to explore."}
+        </desc>
+        <defs>
+          <pattern
+            id="home-coordinate-grid"
+            x={sx(0)}
+            y={sy(0)}
+            width="48"
+            height="48"
+            patternUnits="userSpaceOnUse"
+          >
+            <path
+              d="M 48 0 L 0 0 0 48"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="0.6"
+            />
+          </pattern>
+          <marker
+            id="home-axis-arrow"
+            viewBox="0 0 8 8"
+            refX="6"
+            refY="4"
+            markerWidth="5"
+            markerHeight="5"
+            orient="auto-start-reverse"
+          >
+            <path d="M 0 0 L 8 4 L 0 8" fill="currentColor" />
+          </marker>
+        </defs>
+        <rect
+          x="30"
+          y="38"
+          width="370"
+          height="272"
+          fill="url(#home-coordinate-grid)"
+          className="home-plot-grid"
+        />
+        <g
+          className="home-plot-axes"
+          stroke="currentColor"
+          strokeWidth="1.1"
+          markerEnd="url(#home-axis-arrow)"
+        >
+          <line x1="35" y1={sy(0)} x2="398" y2={sy(0)} />
+          <line x1={sx(0)} y1="312" x2={sx(0)} y2="38" />
+        </g>
+        <g className="home-plot-ticks" textAnchor="middle">
+          {[1, 2, 3, 4, 5, 6].map(x => (
+            <text key={`x${x}`} x={sx(x)} y={sy(0) + 21}>
+              {x}
+            </text>
+          ))}
+          {[1, 2, 3, 4].map(y => (
+            <text key={`y${y}`} x={sx(0) - 16} y={sy(y) + 4}>
+              {y}
+            </text>
+          ))}
+          <text x="412" y={sy(0) + 5}>
+            x
+          </text>
+          <text x={sx(0)} y="25">
+            y
+          </text>
+        </g>
+        <polygon
+          points={vertices
+            .map(point => `${sx(point.x)},${sy(point.y)}`)
+            .join(" ")}
+          className="home-plot-triangle"
+          strokeWidth="2.4"
+          strokeLinejoin="round"
+        />
+        <g
+          className="home-plot-medians"
+          strokeWidth="1.3"
+          strokeDasharray="5 5"
+        >
+          {vertices.map((point, index) => {
+            const other = vertices.filter((_, i) => i !== index);
+            const midpoint = {
+              x: (other[0].x + other[1].x) / 2,
+              y: (other[0].y + other[1].y) / 2,
+            };
+            return (
+              <line
+                key={index}
+                x1={sx(point.x)}
+                y1={sy(point.y)}
+                x2={sx(midpoint.x)}
+                y2={sy(midpoint.y)}
+              />
+            );
+          })}
+        </g>
+        {vertices.map((point, index) => (
+          <circle
+            key={index}
+            cx={sx(point.x)}
+            cy={sy(point.y)}
+            r="5"
+            className="home-plot-vertex"
+          />
+        ))}
+        <g className="home-plot-labels">
+          <text x={sx(0) - 30} y={sy(0) - 10}>
+            A
+          </text>
+          <text x={sx(6) + 13} y={sy(0) - 10}>
+            B
+          </text>
+          <text x={sx(2) + 12} y={sy(4) - 12}>
+            C (2, 4)
+          </text>
+        </g>
+        <circle
+          cx={sx(centroid.x)}
+          cy={sy(centroid.y)}
+          r="14"
+          className="home-plot-centroid-halo"
+        />
+        <circle
+          cx={sx(centroid.x)}
+          cy={sy(centroid.y)}
+          r="5"
+          className="home-plot-centroid"
+        />
+        <g className="home-plot-centroid-label">
+          <text x={sx(centroid.x) + 17} y={sy(centroid.y) - 9}>
+            G
+          </text>
+        </g>
+      </svg>
+      <figcaption className="home-diagram-caption">
+        <div>
+          <span>{lang === "zh" ? "重心" : "Centroid"}</span>
+          <strong>G = (A + B + C) / 3</strong>
+        </div>
+        <span className="home-diagram-static">
+          {lang === "zh" ? "靜態示意" : "Static preview"}
+        </span>
+      </figcaption>
+    </figure>
+  );
+}
+
+function ToolCard({ tool, lang }: { tool: Tool; lang: "zh" | "en" }) {
+  const Icon = tool.icon;
+  return (
+    <Link href={tool.path} className="home-tool-card">
+      <div className="home-tool-card-top">
+        <span className="home-tool-icon">
+          <Icon size={21} strokeWidth={1.6} aria-hidden="true" />
+        </span>
+        <ArrowUpRight
+          size={17}
+          className="home-card-arrow"
+          aria-hidden="true"
+        />
+      </div>
+      <h3>{lang === "zh" ? tool.titleZh : tool.titleEn}</h3>
+      <p>{lang === "zh" ? tool.descZh : tool.descEn}</p>
+      <span className="home-tool-formula">{tool.formula}</span>
+    </Link>
+  );
+}
+
 export default function HomePage() {
   const { lang } = useLanguage();
-  const [, navigate] = useLocation();
+  const learningSteps = [
+    {
+      number: "01",
+      titleZh: "先建立概念",
+      titleEn: "Build a foundation",
+      descZh: "從定義與例題開始，釐清每個符號的意義。",
+      descEn:
+        "Start with definitions and examples to make sense of the notation.",
+      path: "/knowledge",
+      icon: BookOpen,
+    },
+    {
+      number: "02",
+      titleZh: "再動手計算",
+      titleEn: "Work through a calculation",
+      descZh: "選一個矩陣，觀察輸入、運算和結果的關係。",
+      descEn: "Choose a matrix and connect the inputs, operations and results.",
+      path: "/matrix",
+      icon: Grid3X3,
+    },
+    {
+      number: "03",
+      titleZh: "用幾何驗證",
+      titleEn: "Explore it geometrically",
+      descZh: "開啟三角形實驗，以圖像理解向量與中心。",
+      descEn:
+        "Open the triangle experiment to connect vectors and centers visually.",
+      path: "/vector?tab=centers",
+      icon: Triangle,
+    },
+  ];
 
   return (
-    <div className="min-h-full bg-background">
-      {/* Hero Section */}
-      <div
-        className="relative overflow-hidden px-8 py-12 border-b border-border"
-        style={{
-          background: "linear-gradient(135deg, var(--sidebar-bg) 0%, var(--background) 60%)",
-        }}
-      >
-        {/* Background grid decoration */}
-        <div
-          className="absolute inset-0 opacity-5"
-          style={{
-            backgroundImage: `
-              linear-gradient(var(--foreground) 1px, transparent 1px),
-              linear-gradient(90deg, var(--foreground) 1px, transparent 1px)
-            `,
-            backgroundSize: "40px 40px",
-          }}
-        />
-        <div className="relative max-w-4xl">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono mb-4"
-            style={{ background: "var(--accent)", color: "var(--accent-foreground)", border: "1px solid var(--border)" }}>
-            <Calculator className="w-3.5 h-3.5" />
-            {lang === "zh" ? "線性代數計算工具" : "Linear Algebra Computation Tool"}
-          </div>
-
-          <h1
-            className="text-3xl md:text-4xl font-bold mb-3 leading-tight"
-            style={{ fontFamily: "'IBM Plex Serif', serif", color: "var(--foreground)" }}
-          >
-            {lang === "zh" ? "線性代數實驗室" : "Linear Algebra Lab"}
-          </h1>
-          <p className="text-base text-muted-foreground max-w-2xl leading-relaxed mb-6" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
+    <div className="home-workbench">
+      <section className="home-hero" aria-labelledby="home-title">
+        <div className="home-hero-copy">
+          <p className="home-eyebrow">
+            <span aria-hidden="true" />
             {lang === "zh"
-              ? "專為線性代數學習設計的互動式計算工具。所有答案以精確值表示（分數、根號、π），並附逐步推導過程，幫助理解每個運算背後的數學原理。"
-              : "An interactive computation tool designed for learning linear algebra. All answers in exact values (fractions, √, π) with step-by-step derivations to understand the mathematics behind each operation."}
+              ? "把抽象概念變得具體"
+              : "Make the abstract tangible"}
           </p>
-
-          {/* Key highlights */}
-          <div className="flex flex-wrap gap-3">
-            {[
-              { zh: "精確分數輸出", en: "Exact Fraction Output" },
-              { zh: "逐步推導過程", en: "Step-by-Step Derivation" },
-              { zh: "互動式 2D/3D 圖表", en: "Interactive 2D/3D Charts" },
-              { zh: "中英雙語", en: "Bilingual (ZH/EN)" },
-            ].map((tag) => (
-              <span
-                key={tag.en}
-                className="px-3 py-1 rounded-md text-xs font-mono"
-                style={{
-                  background: "var(--card)",
-                  color: "var(--card-foreground)",
-                  border: "1px solid var(--border)",
-                }}
-              >
-                {lang === "zh" ? tag.zh : tag.en}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Feature Cards Grid */}
-      <div className="px-8 py-10">
-        <h2
-          className="text-lg font-semibold mb-6"
-          style={{ fontFamily: "'IBM Plex Serif', serif", color: "var(--foreground)" }}
-        >
-          {lang === "zh" ? "功能模組" : "Feature Modules"}
-        </h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {FEATURES.map((feature) => (
-            <button
-              key={feature.path}
-              onClick={() => navigate(feature.path)}
-              className="group text-left p-5 rounded-xl border transition-all duration-200 hover:shadow-md active:scale-[0.98]"
-              style={{
-                background: "var(--card)",
-                borderColor: "var(--border)",
-                cursor: "pointer",
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.borderColor = feature.color;
-                (e.currentTarget as HTMLElement).style.boxShadow = `0 4px 20px ${feature.color}20`;
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.borderColor = "var(--border)";
-                (e.currentTarget as HTMLElement).style.boxShadow = "";
-              }}
+          <h1 id="home-title">
+            {lang === "zh" ? (
+              <>
+                <span>不只算出答案，</span>
+                <em>看懂數學。</em>
+              </>
+            ) : (
+              <>
+                <span>Beyond the answer.</span>
+                <em>See the mathematics.</em>
+              </>
+            )}
+          </h1>
+          <p className="home-hero-description">
+            {lang === "zh"
+              ? "你的線性代數學習工作台。從矩陣運算到三角形幾何，把公式、計算與圖像連在一起。"
+              : "Your workspace for learning linear algebra. Connect formulas, calculations and visual intuition—from matrices to triangle geometry."}
+          </p>
+          <div className="home-hero-actions">
+            <Link
+              href="/vector?tab=centers"
+              className="home-button home-button-primary"
             >
-              {/* Card header */}
-              <div className="flex items-start justify-between mb-3">
-                <div
-                  className="p-2 rounded-lg"
-                  style={{ background: `${feature.color}15`, color: feature.color }}
-                >
-                  {feature.icon}
-                </div>
-                <ChevronRight
-                  className="w-4 h-4 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
-                  style={{ color: feature.color }}
-                />
-              </div>
-
-              {/* Title */}
-              <h3
-                className="text-sm font-semibold mb-2"
-                style={{ fontFamily: "'IBM Plex Serif', serif", color: "var(--foreground)" }}
-              >
-                {lang === "zh" ? feature.titleZh : feature.titleEn}
-              </h3>
-
-              {/* Description */}
-              <p className="text-xs text-muted-foreground leading-relaxed mb-3" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
-                {lang === "zh" ? feature.descZh : feature.descEn}
-              </p>
-
-              {/* Example tags */}
-              <div className="flex flex-wrap gap-1.5">
-                {(lang === "zh" ? (feature.examplesZh ?? feature.examples ?? []) : (feature.examplesEn ?? feature.examples ?? [])).map((ex) => (
-                  <span
-                    key={ex}
-                    className="px-2 py-0.5 rounded text-xs font-mono"
-                    style={{
-                      background: `${feature.color}12`,
-                      color: feature.color,
-                      border: `1px solid ${feature.color}30`,
-                    }}
-                  >
-                    {ex}
-                  </span>
-                ))}
-              </div>
-            </button>
-          ))}
+              <Triangle size={18} aria-hidden="true" />
+              {lang === "zh" ? "開啟三角形實驗" : "Open triangle lab"}
+              <ArrowRight size={18} aria-hidden="true" />
+            </Link>
+            <Link href="/matrix" className="home-button home-button-secondary">
+              {lang === "zh" ? "開始矩陣計算" : "Calculate a matrix"}
+              <ArrowUpRight size={17} aria-hidden="true" />
+            </Link>
+          </div>
+          <div className="home-hero-topics">
+            <span>{lang === "zh" ? "計算" : "Calculate"}</span>
+            <span aria-hidden="true">·</span>
+            <span>{lang === "zh" ? "觀察" : "Observe"}</span>
+            <span aria-hidden="true">·</span>
+            <span>{lang === "zh" ? "理解" : "Understand"}</span>
+            <span className="home-hero-topic-line" aria-hidden="true" />
+          </div>
         </div>
-      </div>
+        <TriangleDiagram lang={lang} />
+      </section>
 
-      {/* Quick Start Section */}
-      <div className="px-8 pb-10">
-        <div
-          className="rounded-xl p-6 border"
-          style={{
-            background: "var(--card)",
-            borderColor: "var(--border)",
-          }}
+      <section
+        className="home-quick-links"
+        aria-label={
+          lang === "zh" ? "幾何學習捷徑" : "Geometry learning shortcuts"
+        }
+      >
+        <Link href="/vector?tab=centers" className="home-quick-link">
+          <span className="home-quick-icon">
+            <Triangle size={23} strokeWidth={1.6} aria-hidden="true" />
+          </span>
+          <div>
+            <span className="home-quick-kicker">
+              {lang === "zh" ? "焦點實驗" : "Featured experiment"}
+            </span>
+            <h2>
+              {lang === "zh"
+                ? "一個三角形，探索四個中心"
+                : "One triangle. Four centers."}
+            </h2>
+            <p>
+              {lang === "zh"
+                ? "探索重心、內心、外心與垂心的幾何關係。"
+                : "Explore the centroid, incenter, circumcenter and orthocenter."}
+            </p>
+          </div>
+          <ArrowUpRight size={19} aria-hidden="true" />
+        </Link>
+        <Link
+          href="/vector?tab=dse"
+          className="home-quick-link home-quick-link-dse"
         >
-          <h2
-            className="text-base font-semibold mb-4"
-            style={{ fontFamily: "'IBM Plex Serif', serif", color: "var(--foreground)" }}
-          >
-            {lang === "zh" ? "使用說明" : "How to Use"}
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[
-              {
-                step: "01",
-                zh: "從左側選單選擇功能模組",
-                en: "Select a module from the left sidebar",
-              },
-              {
-                step: "02",
-                zh: "輸入矩陣或向量數值，點擊「計算」",
-                en: "Enter matrix or vector values, click 'Calculate'",
-              },
-              {
-                step: "03",
-                zh: "查看精確值結果與逐步推導過程",
-                en: "View exact value results with step-by-step derivations",
-              },
-            ].map((item) => (
-              <div key={item.step} className="flex items-start gap-3">
-                <span
-                  className="text-2xl font-bold font-mono flex-shrink-0"
-                  style={{ color: "var(--muted-foreground)", opacity: 0.3 }}
-                >
-                  {item.step}
-                </span>
-                <p className="text-sm text-muted-foreground leading-relaxed pt-1" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
-                  {lang === "zh" ? item.zh : item.en}
-                </p>
-              </div>
+          <span className="home-quick-icon">
+            <GraduationCap size={24} strokeWidth={1.6} aria-hidden="true" />
+          </span>
+          <div>
+            <span className="home-quick-kicker">
+              {lang === "zh" ? "溫習入口" : "Study shortcut"}
+            </span>
+            <h2>{lang === "zh" ? "DSE 向量專區" : "DSE vector practice"}</h2>
+            <p>
+              {lang === "zh"
+                ? "把向量概念帶進題目，逐步整理解題思路。"
+                : "Bring vector concepts into problems and work through the reasoning."}
+            </p>
+          </div>
+          <ArrowUpRight size={19} aria-hidden="true" />
+        </Link>
+      </section>
+
+      <section className="home-toolkit" aria-labelledby="toolkit-title">
+        <div className="home-section-heading">
+          <div>
+            <p className="home-section-kicker">
+              {lang === "zh" ? "01 / 工具箱" : "01 / The toolkit"}
+            </p>
+            <h2 id="toolkit-title">
+              {lang === "zh" ? "從一個問題開始。" : "Start with a question."}
+            </h2>
+          </div>
+          <p>
+            {lang === "zh"
+              ? "選擇你想探索的主題。"
+              : "Choose what you want to explore."}
+          </p>
+        </div>
+        <div className="home-tool-group">
+          <div className="home-tool-group-heading">
+            <h3>{lang === "zh" ? "代數計算" : "Algebra & computation"}</h3>
+            <span>
+              {lang === "zh" ? "運算與結構" : "Operations & structure"}
+            </span>
+          </div>
+          <div className="home-algebra-grid">
+            {algebraTools.map(tool => (
+              <ToolCard key={tool.path} tool={tool} lang={lang} />
             ))}
           </div>
         </div>
-      </div>
+        <div className="home-tool-group">
+          <div className="home-tool-group-heading">
+            <h3>{lang === "zh" ? "幾何探索" : "Geometry & intuition"}</h3>
+            <span>
+              {lang === "zh" ? "空間與圖像" : "Space & visualization"}
+            </span>
+          </div>
+          <div className="home-geometry-grid">
+            {geometryTools.map(tool => (
+              <ToolCard key={tool.path} tool={tool} lang={lang} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="home-learning" aria-labelledby="learning-title">
+        <div className="home-learning-heading">
+          <div>
+            <p className="home-section-kicker">
+              {lang === "zh" ? "02 / 學習路徑" : "02 / A learning path"}
+            </p>
+            <h2 id="learning-title">
+              {lang === "zh"
+                ? "不知道從哪裡開始？"
+                : "Not sure where to begin?"}
+            </h2>
+          </div>
+          <p>
+            {lang === "zh"
+              ? "由概念到計算，再走進幾何。"
+              : "Move from concepts to calculations, then into geometry."}
+          </p>
+        </div>
+        <ol className="home-learning-steps">
+          {learningSteps.map(
+            ({
+              number,
+              titleZh,
+              titleEn,
+              descZh,
+              descEn,
+              path,
+              icon: Icon,
+            }) => (
+              <li key={number}>
+                <Link href={path}>
+                  <div className="home-learning-step-top">
+                    <span>{number}</span>
+                    <Icon size={20} strokeWidth={1.5} aria-hidden="true" />
+                  </div>
+                  <h3>
+                    {lang === "zh" ? titleZh : titleEn}
+                    <ArrowUpRight size={16} aria-hidden="true" />
+                  </h3>
+                  <p>{lang === "zh" ? descZh : descEn}</p>
+                </Link>
+              </li>
+            )
+          )}
+        </ol>
+      </section>
+      <footer className="home-footer">
+        <span>{lang === "zh" ? "線性代數實驗室" : "Linear Algebra Lab"}</span>
+        <span>
+          {lang === "zh"
+            ? "為每一個「為甚麼」留一點空間。"
+            : "Make room for every “why”."}
+        </span>
+        <span className="home-footer-math" aria-hidden="true">
+          ℝ² → ℝ³
+        </span>
+      </footer>
     </div>
   );
 }

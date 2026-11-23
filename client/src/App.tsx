@@ -1,140 +1,213 @@
-// App.tsx — Linear Algebra Lab
-// Academic Precision Design: deep navy sidebar, clean content area
-// Language: bilingual Chinese/English via LanguageContext
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch, useLocation, Router } from "wouter";
+import { Link, Route, Switch, useLocation, useSearch, Router } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { LanguageProvider, useLanguage } from "./contexts/LanguageContext";
 import HomePage from "./pages/HomePage";
-import MatrixPage from "./pages/MatrixPage";
-import LinearSystemPage from "./pages/LinearSystemPage";
-import VectorPage from "./pages/VectorPage";
-import KnowledgePage from "./pages/KnowledgePage";
-import EigenPage from "./pages/EigenPage";
-import MatrixPowerPage from "./pages/MatrixPowerPage";
-import TransformationPage from "./pages/TransformationPage";
-import { useState } from "react";
-import { Grid3X3, Sigma, ArrowRight, Menu, X, Globe, BookOpen, Sparkles, Zap, Home, Move } from "lucide-react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import {
+  ArrowUpRight,
+  BookOpen,
+  Compass,
+  Globe,
+  Grid3X3,
+  GraduationCap,
+  Home,
+  Menu,
+  Move,
+  Sigma,
+  Sparkles,
+  Triangle,
+  X,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
 
-function Sidebar({ mobile, onClose }: { mobile?: boolean; onClose?: () => void }) {
-  const [location, navigate] = useLocation();
-  const { t, lang, setLang } = useLanguage();
+const MatrixPage = lazy(() => import("./pages/MatrixPage"));
+const LinearSystemPage = lazy(() => import("./pages/LinearSystemPage"));
+const VectorPage = lazy(() => import("./pages/VectorPage"));
+const KnowledgePage = lazy(() => import("./pages/KnowledgePage"));
+const EigenPage = lazy(() => import("./pages/EigenPage"));
+const MatrixPowerPage = lazy(() => import("./pages/MatrixPowerPage"));
+const TransformationPage = lazy(() => import("./pages/TransformationPage"));
 
-  const navItems = [
-    { path: "/", label: lang === "zh" ? "首頁" : "Home", icon: Home },
-    { path: "/matrix", label: t.navMatrix, icon: Grid3X3 },
-    { path: "/system", label: t.navLinearSystem, icon: Sigma },
-    { path: "/vector", label: t.navVector, icon: ArrowRight },
-    { path: "/eigen", label: t.navEigen, icon: Sparkles },
-    { path: "/matrix-power", label: lang === "zh" ? "矩陣 n 次方" : "Matrix Power", icon: Zap },
-    { path: "/transformation", label: t.navTransformation, icon: Move },
-    { path: "/knowledge", label: t.navKnowledge, icon: BookOpen },
+type NavigationItem = { path: string; label: string; icon: LucideIcon };
+
+function LanguageSwitch() {
+  const { lang, setLang } = useLanguage();
+  return (
+    <div className="lab-language">
+      <span className="lab-language-label">
+        <Globe size={14} aria-hidden="true" />
+        {lang === "zh" ? "介面語言" : "Language"}
+      </span>
+      <div
+        className="lab-language-options"
+        role="group"
+        aria-label={lang === "zh" ? "選擇語言" : "Choose language"}
+      >
+        {(["zh", "en"] as const).map(value => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => setLang(value)}
+            aria-pressed={lang === value}
+            lang={value === "zh" ? "zh-Hant" : "en"}
+          >
+            {value === "zh" ? "繁體中文" : "English"}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Sidebar({ onClose }: { onClose?: () => void }) {
+  const [location] = useLocation();
+  const search = useSearch();
+  const tab = new URLSearchParams(search).get("tab");
+  const { lang } = useLanguage();
+  const groups: { label: string; items: NavigationItem[] }[] = [
+    {
+      label: lang === "zh" ? "工作台" : "Workspace",
+      items: [
+        { path: "/", label: lang === "zh" ? "總覽" : "Overview", icon: Home },
+      ],
+    },
+    {
+      label: lang === "zh" ? "代數計算" : "Calculators",
+      items: [
+        {
+          path: "/matrix",
+          label: lang === "zh" ? "矩陣計算" : "Matrices",
+          icon: Grid3X3,
+        },
+        {
+          path: "/system",
+          label: lang === "zh" ? "聯立方程" : "Linear systems",
+          icon: Sigma,
+        },
+        {
+          path: "/eigen",
+          label: lang === "zh" ? "特徵值與向量" : "Eigenvalues & vectors",
+          icon: Sparkles,
+        },
+        {
+          path: "/matrix-power",
+          label: lang === "zh" ? "矩陣 n 次方" : "Matrix powers",
+          icon: Zap,
+        },
+      ],
+    },
+    {
+      label: lang === "zh" ? "幾何探索" : "Geometry",
+      items: [
+        {
+          path: "/vector",
+          label: lang === "zh" ? "向量" : "Vectors",
+          icon: Compass,
+        },
+        {
+          path: "/vector?tab=centers",
+          label: lang === "zh" ? "三角形中心實驗" : "Triangle centers",
+          icon: Triangle,
+        },
+        {
+          path: "/transformation",
+          label: lang === "zh" ? "幾何變換" : "Transformations",
+          icon: Move,
+        },
+      ],
+    },
+    {
+      label: lang === "zh" ? "學習與練習" : "Learn & practice",
+      items: [
+        {
+          path: "/knowledge",
+          label: lang === "zh" ? "知識點庫" : "Knowledge base",
+          icon: BookOpen,
+        },
+        {
+          path: "/vector?tab=dse",
+          label: lang === "zh" ? "DSE 向量專區" : "DSE vector practice",
+          icon: GraduationCap,
+        },
+      ],
+    },
   ];
 
+  function isActive(path: string) {
+    const [pathname, query] = path.split("?");
+    if (pathname !== location) return false;
+    if (query) return tab === new URLSearchParams(query).get("tab");
+    return pathname !== "/vector" || (tab !== "centers" && tab !== "dse");
+  }
+
   return (
-    <aside
-      className={`flex flex-col h-full ${mobile ? "w-full" : "w-64"}`}
-      style={{ background: "var(--sidebar)", color: "var(--sidebar-foreground)" }}
-    >
-      {/* Logo / Title */}
-      <div className="px-5 py-6 border-b" style={{ borderColor: "var(--sidebar-border)" }}>
-        <div className="flex items-center justify-between">
-          <div>
-            <h1
-              className="text-lg font-bold leading-tight"
-              style={{
-                fontFamily: "'IBM Plex Serif', serif",
-                color: "var(--sidebar-foreground)",
-              }}
-            >
-              {lang === "zh" ? "線性代數" : "Linear Algebra"}
-            </h1>
-            <p className="text-xs mt-0.5" style={{ color: "var(--sidebar-primary)", fontFamily: "'IBM Plex Mono', monospace" }}>
-              Lab
-            </p>
-          </div>
-          {mobile && onClose && (
-            <button onClick={onClose} className="p-1 rounded hover:bg-white/10 transition-colors">
-              <X className="w-5 h-5" style={{ color: "var(--sidebar-foreground)" }} />
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-1">
-        {/* Calculators section */}
-        <p className="px-2 pb-1 text-xs font-semibold uppercase tracking-wider opacity-40" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
-          {lang === "zh" ? "計算器" : "Calculators"}
-        </p>
-        {navItems.slice(0, 6).map((item) => {
-          const Icon = item.icon;
-          const isActive = location === item.path;
-          return (
-            <button
-              key={item.path}
-              onClick={() => { navigate(item.path); onClose?.(); }}
-              className={`nav-item ${isActive ? "active" : ""}`}
-            >
-              <Icon className="w-4 h-4 flex-shrink-0" />
-              <span>{item.label}</span>
-            </button>
-          );
-        })}
-
-        {/* Resources section */}
-        <p className="px-2 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider opacity-40" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
-          {lang === "zh" ? "學習資源" : "Resources"}
-        </p>
-        {navItems.slice(6).map((item) => {
-          const Icon = item.icon;
-          const isActive = location === item.path;
-          return (
-            <button
-              key={item.path}
-              onClick={() => { navigate(item.path); onClose?.(); }}
-              className={`nav-item ${isActive ? "active" : ""}`}
-            >
-              <Icon className="w-4 h-4 flex-shrink-0" />
-              <span>{item.label}</span>
-            </button>
-          );
-        })}
-      </nav>
-
-      {/* Language toggle + footer */}
-      <div className="px-3 py-4 border-t space-y-3" style={{ borderColor: "var(--sidebar-border)" }}>
-        <div>
-          <div className="flex items-center gap-2 px-1 mb-1.5">
-            <Globe className="w-3.5 h-3.5" style={{ color: "var(--sidebar-primary)" }} />
-            <span className="text-xs font-mono" style={{ color: "var(--sidebar-foreground)", opacity: 0.7 }}>
-              {t.language}
-            </span>
-          </div>
-          <div className="flex gap-1">
-            {(["zh", "en"] as const).map((l) => (
-              <button
-                key={l}
-                onClick={() => setLang(l)}
-                className={`flex-1 py-1.5 text-xs font-mono font-semibold rounded transition-all duration-150
-                  ${lang === l ? "text-white" : "hover:bg-white/10"}`}
-                style={{
-                  background: lang === l ? "var(--sidebar-primary)" : "transparent",
-                  color: lang === l ? "var(--sidebar-primary-foreground)" : "var(--sidebar-foreground)",
-                }}
+    <aside className="lab-sidebar">
+      <Link
+        href="/"
+        className="lab-brand"
+        onClick={onClose}
+        aria-label={
+          lang === "zh" ? "線性代數實驗室總覽" : "Linear Algebra Lab overview"
+        }
+      >
+        <span className="lab-brand-mark" aria-hidden="true">
+          <span>[</span>
+          <span>λ</span>
+          <span>]</span>
+        </span>
+        <span className="lab-brand-copy">
+          <strong>{lang === "zh" ? "線性代數" : "Linear Algebra"}</strong>
+          <span>{lang === "zh" ? "互動實驗室" : "Interactive lab"}</span>
+        </span>
+      </Link>
+      <nav
+        className="lab-navigation"
+        aria-label={lang === "zh" ? "主要導覽" : "Main navigation"}
+      >
+        {groups.map(group => (
+          <div className="lab-nav-group" key={group.label}>
+            <p className="lab-nav-label">{group.label}</p>
+            {group.items.map(({ path, label, icon: Icon }) => (
+              <Link
+                key={path}
+                href={path}
+                onClick={onClose}
+                className={`nav-item${isActive(path) ? " active" : ""}`}
+                aria-current={isActive(path) ? "page" : undefined}
               >
-                {l === "zh" ? "中文" : "EN"}
-              </button>
+                <Icon size={17} strokeWidth={1.65} aria-hidden="true" />
+                <span>{label}</span>
+                {isActive(path) && (
+                  <span className="lab-nav-indicator" aria-hidden="true" />
+                )}
+              </Link>
             ))}
           </div>
+        ))}
+      </nav>
+      <div className="lab-sidebar-bottom">
+        <div className="lab-sidebar-note">
+          <span aria-hidden="true">Ax = b</span>
+          <p>
+            {lang === "zh"
+              ? "從計算，走向理解。"
+              : "From computation to understanding."}
+          </p>
         </div>
-
-        <p className="text-xs px-1" style={{ color: "var(--sidebar-foreground)", opacity: 0.4, fontFamily: "'IBM Plex Mono', monospace" }}>
-          v3.0.0
-        </p>
+        <LanguageSwitch />
       </div>
     </aside>
   );
@@ -142,85 +215,156 @@ function Sidebar({ mobile, onClose }: { mobile?: boolean; onClose?: () => void }
 
 function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { t, lang } = useLanguage();
+  const { lang, t } = useLanguage();
   const [location] = useLocation();
-
+  const search = useSearch();
+  const tab = new URLSearchParams(search).get("tab");
+  const mainRef = useRef<HTMLElement>(null);
+  const previousLocation = useRef(location);
   const pageTitle: Record<string, string> = {
-    "/": lang === "zh" ? "首頁" : "Home",
+    "/": lang === "zh" ? "學習工作台" : "Learning workspace",
     "/matrix": t.navMatrix,
     "/system": t.navLinearSystem,
-    "/vector": t.navVector,
+    "/vector":
+      tab === "centers"
+        ? lang === "zh"
+          ? "三角形中心實驗"
+          : "Triangle centers"
+        : tab === "dse"
+          ? lang === "zh"
+            ? "DSE 向量專區"
+            : "DSE vector practice"
+          : t.navVector,
     "/eigen": t.navEigen,
-    "/matrix-power": lang === "zh" ? "矩陣 n 次方" : "Matrix Power A^n",
+    "/matrix-power": lang === "zh" ? "矩陣 n 次方" : "Matrix powers",
     "/transformation": t.navTransformation,
     "/knowledge": t.navKnowledge,
   };
 
+  useEffect(() => {
+    document.documentElement.lang = lang === "zh" ? "zh-Hant" : "en";
+    document.title = `${pageTitle[location] || t.appTitle} · ${t.appTitle}`;
+  }, [lang, location, tab, t.appTitle]);
+
+  useEffect(() => {
+    setMobileOpen(false);
+    if (previousLocation.current !== location) {
+      mainRef.current?.scrollTo({ top: 0 });
+      mainRef.current?.focus({ preventScroll: true });
+      previousLocation.current = location;
+    }
+  }, [location, search]);
+
+  useEffect(() => {
+    const desktop = window.matchMedia("(min-width: 1024px)");
+    const closeOnDesktop = () => {
+      if (desktop.matches) setMobileOpen(false);
+    };
+    desktop.addEventListener("change", closeOnDesktop);
+    return () => desktop.removeEventListener("change", closeOnDesktop);
+  }, []);
+
   return (
-    <div className="flex h-screen overflow-hidden">
-      {/* Desktop sidebar */}
-      <div className="hidden lg:flex flex-col flex-shrink-0 h-full border-r" style={{ borderColor: "var(--sidebar-border)" }}>
+    <div className="lab-shell">
+      <a
+        className="lab-skip-link"
+        href="#main-content"
+        onClick={() => mainRef.current?.focus()}
+      >
+        {lang === "zh" ? "跳至主要內容" : "Skip to content"}
+      </a>
+      <div className="lab-desktop-sidebar">
         <Sidebar />
       </div>
-
-      {/* Mobile sidebar overlay */}
-      {mobileOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => setMobileOpen(false)}
-          />
-          <div className="absolute left-0 top-0 bottom-0 w-72 flex flex-col shadow-xl">
-            <Sidebar mobile onClose={() => setMobileOpen(false)} />
+      <div className="lab-workspace">
+        <header className="lab-topbar">
+          <div className="lab-topbar-heading">
+            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+              <SheetTrigger asChild>
+                <button
+                  type="button"
+                  className="lab-menu-button"
+                  aria-label={
+                    lang === "zh" ? "開啟導覽選單" : "Open navigation menu"
+                  }
+                >
+                  <Menu size={21} aria-hidden="true" />
+                </button>
+              </SheetTrigger>
+              <SheetContent side="left" className="lab-sidebar-sheet">
+                <SheetTitle className="sr-only">
+                  {lang === "zh" ? "導覽選單" : "Navigation menu"}
+                </SheetTitle>
+                <SheetDescription className="sr-only">
+                  {lang === "zh"
+                    ? "選擇計算工具、幾何實驗或學習資源，也可以切換介面語言。"
+                    : "Choose a calculator, geometry experiment or learning resource, or change the interface language."}
+                </SheetDescription>
+                <SheetClose asChild>
+                  <button
+                    type="button"
+                    className="lab-drawer-close"
+                    aria-label={
+                      lang === "zh" ? "關閉導覽選單" : "Close navigation menu"
+                    }
+                  >
+                    <X size={20} aria-hidden="true" />
+                  </button>
+                </SheetClose>
+                <Sidebar onClose={() => setMobileOpen(false)} />
+              </SheetContent>
+            </Sheet>
+            <div className="lab-breadcrumb">
+              <span className="lab-breadcrumb-root">
+                {lang === "zh" ? "實驗室" : "The lab"}
+              </span>
+              <span className="lab-breadcrumb-slash" aria-hidden="true">
+                /
+              </span>
+              <span>{pageTitle[location] || t.appTitle}</span>
+            </div>
           </div>
-        </div>
-      )}
-
-      {/* Main content */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Mobile top bar */}
-        <header className="lg:hidden flex items-center gap-3 px-4 py-3 border-b border-border bg-card">
-          <button
-            onClick={() => setMobileOpen(true)}
-            className="p-1.5 rounded hover:bg-secondary transition-colors"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-          <span className="font-semibold text-sm" style={{ fontFamily: "'IBM Plex Serif', serif" }}>
-            {pageTitle[location] || t.appTitle}
-          </span>
+          <Link href="/knowledge" className="lab-topbar-link">
+            <BookOpen size={15} aria-hidden="true" />
+            <span>{lang === "zh" ? "查閱概念" : "Explore concepts"}</span>
+            <ArrowUpRight size={14} aria-hidden="true" />
+          </Link>
         </header>
-
-        {/* Desktop top bar */}
-        <header className="hidden lg:flex items-center justify-between px-8 py-4 border-b border-border bg-card/50 backdrop-blur-sm">
-          <div>
-            <h2 className="text-sm font-semibold text-foreground" style={{ fontFamily: "'IBM Plex Serif', serif" }}>
-              {pageTitle[location] || t.appTitle}
-            </h2>
-            <p className="text-xs text-muted-foreground font-mono">{t.appSubtitle}</p>
+        <main
+          id="main-content"
+          ref={mainRef}
+          tabIndex={-1}
+          className={`lab-main${location === "/" ? " lab-main-home" : ""}`}
+        >
+          <div className="lab-page-content">
+            <Suspense
+              fallback={
+                <div
+                  role="status"
+                  className="py-16 text-sm text-muted-foreground"
+                >
+                  {lang === "zh"
+                    ? "正在載入數學工具…"
+                    : "Loading the maths workspace…"}
+                </div>
+              }
+            >
+              <Switch>
+                <Route path="/" component={HomePage} />
+                <Route path="/matrix" component={MatrixPage} />
+                <Route path="/system" component={LinearSystemPage} />
+                <Route path="/vector" component={VectorPage} />
+                <Route path="/knowledge">
+                  {() => <KnowledgePage lang={lang} />}
+                </Route>
+                <Route path="/eigen" component={EigenPage} />
+                <Route path="/matrix-power" component={MatrixPowerPage} />
+                <Route path="/transformation" component={TransformationPage} />
+                <Route path="/404" component={NotFound} />
+                <Route component={NotFound} />
+              </Switch>
+            </Suspense>
           </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
-            <span className="w-2 h-2 rounded-full bg-accent inline-block" />
-            Linear Algebra Lab
-          </div>
-        </header>
-
-        {/* Page content */}
-        <main className="flex-1 overflow-y-auto">
-          <Switch>
-            <Route path="/" component={HomePage} />
-            <Route path="/matrix" component={MatrixPage} />
-            <Route path="/system" component={LinearSystemPage} />
-            <Route path="/vector" component={VectorPage} />
-            <Route path="/knowledge">
-              {() => <KnowledgePage lang={lang} />}
-            </Route>
-            <Route path="/eigen" component={EigenPage} />
-            <Route path="/matrix-power" component={MatrixPowerPage} />
-            <Route path="/transformation" component={TransformationPage} />
-            <Route path="/404" component={NotFound} />
-            <Route component={NotFound} />
-          </Switch>
         </main>
       </div>
     </div>
