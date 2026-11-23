@@ -78,10 +78,11 @@ const geometryTools: Tool[] = [
     icon: Grid3X3,
     titleZh: "直線與平面夾角",
     titleEn: "Lines & planes",
-    descZh: "選擇傾斜平面，逐步推導兩平面或直線與平面的夾角。",
-    descEn: "Explore inclined planes and derive plane–plane or line–plane angles.",
+    descZh: "由四點或以上的已知坐標，以向量投影逐步求空間夾角。",
+    descEn:
+      "Use four or more given points and vector projections to derive spatial angles.",
     path: "/vector?tab=spatial",
-    formula: "cos θ · sin θ · n₁ · n₂ · d",
+    formula: "AB · AC · AD → projection → θ",
   },
   {
     icon: Move,

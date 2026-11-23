@@ -10,6 +10,7 @@ import {
 } from "@/lib/Phase20knowledge";
 import KatexRenderer from "@/components/KatexRenderer";
 import StepDisplay from "@/components/StepDisplay";
+import SpatialKnowledgeExample from "@/components/SpatialKnowledgeExample";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -121,14 +122,31 @@ function KnowledgeCard({
                 </div>
                 {lesson.exampleSteps.length > 0 && (
                   <div className="min-w-0">
-                    <StepDisplay
-                      steps={lesson.exampleSteps}
-                      title={
-                        lang === "zh"
-                          ? "例子：逐步演算與原例對照"
-                          : "Example: worked steps & original summary"
-                      }
-                    />
+                    {isSpatialAngle ? (
+                      <SpatialKnowledgeExample
+                        mode={
+                          item.id === "vec-plane-plane-angle"
+                            ? "plane-plane"
+                            : "line-plane"
+                        }
+                        steps={lesson.exampleSteps}
+                        lang={lang}
+                        title={
+                          lang === "zh"
+                            ? "四點例子：向量推導與示意圖"
+                            : "Four-point example: vectors & diagram"
+                        }
+                      />
+                    ) : (
+                      <StepDisplay
+                        steps={lesson.exampleSteps}
+                        title={
+                          lang === "zh"
+                            ? "例子：逐步演算與原例對照"
+                            : "Example: worked steps & original summary"
+                        }
+                      />
+                    )}
                   </div>
                 )}
               </div>
@@ -139,8 +157,8 @@ function KnowledgeCard({
                 >
                   <span>
                     {lang === "zh"
-                      ? "前往空間向量工具，探索直線與平面"
-                      : "Explore lines and planes in the spatial vector tool"}
+                      ? "輸入四點或以上，以向量求空間夾角"
+                      : "Use four or more points to explore spatial angles"}
                   </span>
                   <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
                 </Link>

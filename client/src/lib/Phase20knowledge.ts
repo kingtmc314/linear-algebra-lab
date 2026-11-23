@@ -117,12 +117,12 @@ const contexts: Record<string, BilingualStep> = {
     "a and b must be nonzero and have the same dimension. θ=arccos(…) lies from 0 to π radians, or 0° to 180°. The denominator is the product of lengths; the inverse cosine takes a scalar, not a vector."
   ),
   "vec-plane-plane-angle": step(
-    "Π₁、Π₂ 是三維平面；n₁、n₂≠0 是各平面的法向量，d₁、d₂ 是常數，r=(x,y,z) 是位置向量。φ 是兩平面的較小夾角，0≤φ≤π/2。法向量反向不改變平面，故點積取絕對值。",
-    "Π₁ and Π₂ are 3D planes; n₁,n₂≠0 are their normals, d₁,d₂ constants, and r=(x,y,z) a position vector. φ is the smaller plane angle, 0≤φ≤π/2. Reversing a normal does not change its plane, so use the absolute dot product."
+    "已知至少四個點。平面 ABC、ABD 共用直線 AB；h=AB≠0 是交線方向。把 AC、AD 沿 h 的分量扣除，得到各平面內垂直於交線的非零向量 u、v。φ 是兩平面的較小夾角，0≤φ≤π/2；以 |u·v| 選較小開口，毋須建立平面方程。",
+    "Given at least four points, planes ABC and ABD share line AB. h=AB≠0 is the intersection direction. Remove the components of AC and AD along h to obtain nonzero in-plane vectors u,v perpendicular to that edge. φ is the smaller plane angle, 0≤φ≤π/2; |u·v| selects the smaller opening without a plane equation."
   ),
   "vec-line-plane-angle": step(
-    "直線 r=p+tu 中，p 是直線上一點、t∈ℝ 是參數、u≠0 是方向向量。平面 n·r=d 中，n≠0 是法向量，d 是常數。α 是直線與平面的較小夾角，0≤α≤π/2，不是 u 與 n 的夾角。",
-    "In the line r=p+tu, p is a point on the line, t∈ℝ a parameter, and u≠0 its direction. In the plane n·r=d, n≠0 is a normal and d a constant. α is the smaller line–plane angle, 0≤α≤π/2, not the angle between u and n."
+    "已知至少四個點，選平面 ABC 及直線 PQ（端點可共用已知點）。a=AB、b=AC 是平面內兩個獨立向量，d=PQ≠0 是直線方向。設 q=αa+βb 是 d 在平面內的投影；α、β 是待求投影係數，由 (d−q)·a=(d−q)·b=0 求得。θ 是 d 與 q 的較小夾角；q=0 時直線垂直平面，θ=π/2。",
+    "Given at least four points, choose plane ABC and line PQ, whose endpoints may reuse given points. a=AB and b=AC are independent in-plane vectors; d=PQ≠0 is the line direction. q=αa+βb is its in-plane projection. The unknown coefficients α,β satisfy (d−q)·a=(d−q)·b=0. θ is the smaller angle between d and q; q=0 means a perpendicular line with θ=π/2."
   ),
 };
 
@@ -475,36 +475,66 @@ const workedExamples: Record<string, BilingualStep[]> = {
   ],
   "vec-plane-plane-angle": [
     step(
-      "從平面方程的係數讀取兩個非零法向量。",
-      "Read the nonzero normals from the coefficients of the plane equations.",
-      String.raw`\Pi_1:x=0,\quad\Pi_2:x+y=0,\quad\mathbf n_1=(1,0,0),\ \mathbf n_2=(1,1,0)`
+      "已知四點 A、B、C、D，求平面 ABC 與 ABD 的較小夾角 φ；兩平面共用 AB。",
+      "Given A,B,C,D, find the smaller angle φ between planes ABC and ABD, which share edge AB.",
+      String.raw`A=(0,0,0),\ B=(2,0,0),\ C=(0,2,0),\ D=(0,2,2)`
     ),
     step(
-      "平面較小夾角等於法向量較小夾角；用絕對值排除法向量反向的影響。",
-      "The smaller plane angle equals the smaller normal angle; absolute value removes dependence on normal orientation.",
-      String.raw`|\mathbf n_1\cdot\mathbf n_2|=1,\quad |\mathbf n_1|=1,\quad |\mathbf n_2|=\sqrt2`
+      "用終點減起點建立向量，不寫平面方程。h 為交線方向，a、b 分別在兩平面內。",
+      "Subtract starting-point coordinates from endpoint coordinates. h is the shared-edge direction; a,b lie in the respective planes.",
+      String.raw`\mathbf h=\overrightarrow{AB}=(2,0,0),\quad\mathbf a=\overrightarrow{AC}=(0,2,0),\quad\mathbf b=\overrightarrow{AD}=(0,2,2)`
     ),
     step(
-      "代入並化為精確特殊角，不需要數值近似。",
-      "Substitute and simplify to an exact special angle, without numerical approximation.",
-      String.raw`\varphi=\arccos\frac1{\sqrt2}=\frac\pi4=45^\circ`
+      "扣除沿 AB 的投影，取兩個垂直於交線的平面內方向；此例兩個投影係數恰為零。",
+      "Remove the projections along AB to obtain directions perpendicular to the common edge. Both projection coefficients are exactly zero here.",
+      String.raw`\mathbf h\cdot\mathbf h=4,\quad\mathbf a\cdot\mathbf h=\mathbf b\cdot\mathbf h=0,\quad\mathbf u=\mathbf a-\frac{\mathbf a\cdot\mathbf h}{\mathbf h\cdot\mathbf h}\mathbf h=(0,2,0),\quad\mathbf v=\mathbf b-\frac{\mathbf b\cdot\mathbf h}{\mathbf h\cdot\mathbf h}\mathbf h=(0,2,2)`
+    ),
+    step(
+      "計算截面向量的內積與長度；u、v 均非零，故可以使用餘弦公式。",
+      "Compute the section vectors' dot product and lengths. Both u,v are nonzero, so the cosine formula applies.",
+      String.raw`\mathbf u\cdot\mathbf v=0\cdot0+2\cdot2+0\cdot2=4,\quad|\mathbf u|=2,\quad|\mathbf v|=\sqrt8=2\sqrt2`
+    ),
+    step(
+      "較小平面夾角就是此垂直截面內兩方向的較小夾角；取絕對值排除方向反轉。",
+      "The smaller plane angle is the smaller angle in this perpendicular section. Absolute value removes dependence on direction reversal.",
+      String.raw`\cos\varphi=\frac{|\mathbf u\cdot\mathbf v|}{|\mathbf u||\mathbf v|}=\frac4{2(2\sqrt2)}=\frac{\sqrt2}{2}`
+    ),
+    step(
+      "化為精確特殊角。全程只使用已知點、向量差、內積與投影。",
+      "Recognize the exact special angle, using only given points, vector differences, dot products and projections.",
+      String.raw`\varphi=\arccos\frac{\sqrt2}{2}=\frac\pi4=45^\circ`
     ),
   ],
   "vec-line-plane-angle": [
     step(
-      "指定直線與平面；從直線取方向向量，從平面取法向量。",
-      "Specify the line and plane; take the line’s direction and the plane’s normal.",
-      String.raw`\mathbf r=t(1,0,1),\quad\Pi:z=0,\quad\mathbf u=(1,0,1),\ \mathbf n=(0,0,1)`
+      "已知四點，求直線 AD 與平面 ABC 的夾角 θ。A 同時是直線端點及平面頂點。",
+      "Given four points, find θ between line AD and plane ABC. A is both a line endpoint and a plane vertex.",
+      String.raw`A=(0,0,0),\ B=(2,0,0),\ C=(0,2,0),\ D=(0,2,2)`
     ),
     step(
-      "設 β 是 u 與 n 的較小夾角；直線與平面夾角是其餘角。",
-      "Let β be the smaller angle between u and n; the line–plane angle is its complement.",
-      String.raw`\alpha=\frac\pi2-\beta,\quad\sin\alpha=\cos\beta=\frac{|\mathbf u\cdot\mathbf n|}{|\mathbf u||\mathbf n|}`
+      "從點坐標建立兩個平面內向量 a、b，以及直線方向 d。",
+      "Form two in-plane vectors a,b and the line direction d from point differences.",
+      String.raw`\mathbf a=\overrightarrow{AB}=(2,0,0),\quad\mathbf b=\overrightarrow{AC}=(0,2,0),\quad\mathbf d=\overrightarrow{AD}=(0,2,2)`
     ),
     step(
-      "點積為 1、長度為 √2 和 1，得到精確角度。",
-      "The dot product is 1 and lengths are √2 and 1, giving the exact angle.",
-      String.raw`\alpha=\arcsin\frac1{\sqrt2}=\frac\pi4=45^\circ`
+      "設 q=αa+βb。垂直分量 d−q 必須同時與 a、b 垂直；用內積得到兩個係數方程。",
+      "Set q=αa+βb. The perpendicular component d−q is orthogonal to both a,b; dot products give two equations for the coefficients.",
+      String.raw`\begin{cases}(\mathbf a\cdot\mathbf a)\alpha+(\mathbf a\cdot\mathbf b)\beta=\mathbf d\cdot\mathbf a\\(\mathbf a\cdot\mathbf b)\alpha+(\mathbf b\cdot\mathbf b)\beta=\mathbf d\cdot\mathbf b\end{cases}\quad\Longrightarrow\quad4\alpha=0,\ 4\beta=4,\quad\alpha=0,\ \beta=1`
+    ),
+    step(
+      "代回投影 q，並驗證 d−q 與兩個平面內方向的內積均為零；這是純向量投影，不是平面方程。",
+      "Substitute q and verify that d−q has zero dot product with both in-plane directions. This is a vector projection, not a plane equation.",
+      String.raw`\mathbf q=0\mathbf a+1\mathbf b=(0,2,0),\quad\mathbf d-\mathbf q=(0,0,2),\quad(\mathbf d-\mathbf q)\cdot\mathbf a=(\mathbf d-\mathbf q)\cdot\mathbf b=0`
+    ),
+    step(
+      "直線與平面夾角是直線方向 d 與其平面內投影 q 的較小夾角。",
+      "The line–plane angle is the smaller angle between the line direction d and its in-plane projection q.",
+      String.raw`\mathbf d\cdot\mathbf q=4,\quad|\mathbf d|=2\sqrt2,\quad|\mathbf q|=2,\quad\cos\theta=\frac{|\mathbf d\cdot\mathbf q|}{|\mathbf d||\mathbf q|}=\frac{\sqrt2}{2}`
+    ),
+    step(
+      "此例投影非零，反餘弦給出精確角；若 q=0，則應直接判斷 θ=90°，不能除以零。",
+      "Here q is nonzero and inverse cosine gives the exact angle. If q=0, report θ=90° directly rather than divide by zero.",
+      String.raw`\theta=\arccos\frac{\sqrt2}{2}=\frac\pi4=45^\circ`
     ),
   ],
 };
@@ -514,34 +544,43 @@ export const spatialKnowledgeItems: KnowledgeItemData[] = [
     id: "vec-plane-plane-angle",
     titleZh: "兩平面的夾角",
     titleEn: "Angle Between Two Planes",
-    formula: String.raw`\varphi=\arccos\left(\frac{|\mathbf n_1\cdot\mathbf n_2|}{|\mathbf n_1||\mathbf n_2|}\right),\quad0\le\varphi\le\frac\pi2`,
+    formula: String.raw`\varphi=\arccos\left(\frac{|\mathbf u\cdot\mathbf v|}{|\mathbf u||\mathbf v|}\right),\quad0\le\varphi\le\frac\pi2`,
     descriptionZh:
-      "平面 Π₁：n₁·r=d₁、Π₂：n₂·r=d₂ 的較小夾角，由非零法向量求得。平移平面不改變角度，因此 d₁、d₂ 不出現在角度公式中。平行時 φ=0；法向量正交時 φ=90°。",
+      "由四點或以上的已知坐標組成兩個平面。共用邊 AB 時，以 h=AB 為交線方向，把 AC、AD 沿 h 的投影扣除，得到 u、v，兩者均在各自平面內且垂直於交線；用內積求較小平面夾角。不是任選兩條平面內向量求夾角，也毋須先寫平面方程。",
     descriptionEn:
-      "For planes Π₁: n₁·r=d₁ and Π₂: n₂·r=d₂, find the smaller angle using their nonzero normals. Translating a plane does not change the angle, so d₁,d₂ do not enter the angle formula. Parallel planes have φ=0; orthogonal normals give φ=90°.",
-    exampleZh: String.raw`\Pi_1:x=0,\quad\Pi_2:x+y=0\quad\Longrightarrow\quad\varphi=\frac\pi4=45^\circ`,
-    exampleEn: String.raw`\Pi_1:x=0,\quad\Pi_2:x+y=0\quad\Longrightarrow\quad\varphi=\frac\pi4=45^\circ`,
-    tags: ["plane-plane", "normal", "spatial", "平面", "法向量", "空間"],
+      "Build two planes from four or more given points. With shared edge AB, set h=AB and remove the components of AC and AD along h to obtain u,v in their respective planes and perpendicular to the edge. Their dot product gives the smaller plane angle. Arbitrary in-plane vectors do not suffice; no plane equation is required.",
+    exampleZh: String.raw`A=(0,0,0),\ B=(2,0,0),\ C=(0,2,0),\ D=(0,2,2),\quad\angle(ABC,ABD)=\frac\pi4=45^\circ`,
+    exampleEn: String.raw`A=(0,0,0),\ B=(2,0,0),\ C=(0,2,0),\ D=(0,2,2),\quad\angle(ABC,ABD)=\frac\pi4=45^\circ`,
+    tags: [
+      "plane-plane",
+      "projection",
+      "shared edge",
+      "spatial",
+      "平面",
+      "投影",
+      "已知點",
+      "空間",
+    ],
   },
   {
     id: "vec-line-plane-angle",
     titleZh: "直線與平面的夾角",
     titleEn: "Angle Between a Line and a Plane",
-    formula: String.raw`\alpha=\arcsin\left(\frac{|\mathbf u\cdot\mathbf n|}{|\mathbf u||\mathbf n|}\right),\quad0\le\alpha\le\frac\pi2`,
+    formula: String.raw`\theta=\arccos\left(\frac{|\mathbf d\cdot\mathbf q|}{|\mathbf d||\mathbf q|}\right)\ (\mathbf q\ne\mathbf0),\quad\mathbf q=\mathbf0\Rightarrow\theta=\frac\pi2`,
     descriptionZh:
-      "直線 r=p+tu 與平面 n·r=d 的較小夾角，是方向向量 u 與法向量 n 的較小夾角的餘角，因此用反正弦。u·n=0 時直線平行於或位於平面，α=0；u 與 n 平行時直線垂直平面，α=90°。",
+      "從已知點取得直線方向 d=PQ，並用平面內兩個獨立方向 a=AB、b=AC 建立投影 q=αa+βb。由 (d−q)·a=(d−q)·b=0 求係數，再以 d、q 的內積求較小夾角。不使用平面方程；投影為零時直接判斷垂直，θ=90°。",
     descriptionEn:
-      "The smaller angle between line r=p+tu and plane n·r=d complements the smaller angle between direction u and normal n, so use inverse sine. If u·n=0 the line is parallel to or contained in the plane, giving α=0; u parallel to n means the line is perpendicular to the plane, giving α=90°.",
-    exampleZh: String.raw`\mathbf r=t(1,0,1),\quad\Pi:z=0\quad\Longrightarrow\quad\alpha=\frac\pi4=45^\circ`,
-    exampleEn: String.raw`\mathbf r=t(1,0,1),\quad\Pi:z=0\quad\Longrightarrow\quad\alpha=\frac\pi4=45^\circ`,
+      "Take d=PQ from given points and build q=αa+βb from independent in-plane directions a=AB,b=AC. Solve (d−q)·a=(d−q)·b=0 for the coefficients, then use the dot product of d,q for the smaller angle. No plane equation is used; a zero projection means a perpendicular line, θ=90°.",
+    exampleZh: String.raw`A=(0,0,0),\ B=(2,0,0),\ C=(0,2,0),\ D=(0,2,2),\quad\angle(AD,ABC)=\frac\pi4=45^\circ`,
+    exampleEn: String.raw`A=(0,0,0),\ B=(2,0,0),\ C=(0,2,0),\ D=(0,2,2),\quad\angle(AD,ABC)=\frac\pi4=45^\circ`,
     tags: [
       "line-plane",
-      "normal",
+      "projection",
       "direction",
       "spatial",
       "直線",
       "平面",
-      "法向量",
+      "投影",
       "方向向量",
       "空間",
     ],

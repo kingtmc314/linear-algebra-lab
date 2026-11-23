@@ -208,22 +208,45 @@ describe("Phase20knowledge bilingual teaching lessons", () => {
     );
   });
 
-  it("distinguishes plane–plane cosine from line–plane sine using nonzero vector definitions and exact angles", () => {
+  it("teaches both spatial angles from four given points using vector-only projections and exact cosine angles", () => {
     const [planes, linePlane] = spatialKnowledgeItems;
     expect(planes.formula).toContain(String.raw`\arccos`);
-    expect(planes.formula).toContain(String.raw`|\mathbf n_1\cdot\mathbf n_2|`);
-    expect(linePlane.formula).toContain(String.raw`\arcsin`);
-    expect(linePlane.formula).toContain(String.raw`|\mathbf u\cdot\mathbf n|`);
+    expect(planes.formula).toContain(String.raw`|\mathbf u\cdot\mathbf v|`);
+    expect(linePlane.formula).toContain(String.raw`\arccos`);
+    expect(linePlane.formula).toContain(String.raw`|\mathbf d\cdot\mathbf q|`);
+    expect(linePlane.formula).toContain(
+      String.raw`\mathbf q=\mathbf0\Rightarrow\theta=\frac\pi2`
+    );
     for (const item of spatialKnowledgeItems) {
       const lesson = buildKnowledgeLesson(item, "en");
       expect(lesson.conceptSteps[0].description).toContain("≠0");
+      expect(lesson.conceptSteps[0].description).toContain(
+        "at least four points"
+      );
+      expect(lesson.exampleSteps).toHaveLength(7);
+      expect(lesson.exampleSteps[0].latex).toContain("D=(0,2,2)");
       expect(lesson.exampleSteps.at(-2)?.latex).toContain(
         String.raw`\frac\pi4=45^\circ`
       );
+      for (const lang of ["zh", "en"] as const) {
+        const localized = buildKnowledgeLesson(item, lang);
+        const formulas = [...localized.conceptSteps, ...localized.exampleSteps]
+          .map(step => step.latex ?? "")
+          .join("\n");
+        expect(formulas).not.toMatch(
+          /\\mathbf\s+r|\\Pi[^,]*:[xyz]|\\mathbf n|n[₁₂]?·r=/
+        );
+        if (lang === "en") {
+          expect(JSON.stringify(localized)).not.toMatch(/[\u3400-\u9fff]/);
+        }
+      }
     }
+    expect(buildKnowledgeLesson(planes, "en").exampleSteps[2].latex).toContain(
+      String.raw`\frac{\mathbf a\cdot\mathbf h}{\mathbf h\cdot\mathbf h}`
+    );
     expect(
-      buildKnowledgeLesson(linePlane, "en").exampleSteps[1].latex
-    ).toContain(String.raw`\alpha=\frac\pi2-\beta`);
+      buildKnowledgeLesson(linePlane, "en").exampleSteps[2].latex
+    ).toContain(String.raw`\alpha=0,\ \beta=1`);
   });
 
   it("preserves bilingual title/description search and adds condition/tag search with normalized whitespace", () => {
@@ -237,7 +260,7 @@ describe("Phase20knowledge bilingual teaching lessons", () => {
       matchesKnowledgeQuery(findItem("matrix-mul"), "k runs from 1 to n")
     ).toBe(true);
     expect(
-      matchesKnowledgeQuery(findItem("vec-plane-plane-angle"), "法向量")
+      matchesKnowledgeQuery(findItem("vec-plane-plane-angle"), "已知點")
     ).toBe(true);
     expect(
       matchesKnowledgeQuery(findItem("vec-line-plane-angle"), "spatial")

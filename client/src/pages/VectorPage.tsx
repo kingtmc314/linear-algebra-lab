@@ -341,7 +341,7 @@ export default function VectorPage() {
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
           {activeTab === "spatial"
-            ? lang === "zh" ? "探索任意傾斜平面，以法向量、方向向量和建構圖理解夾角。" : "Explore inclined planes through normals, directions and animated geometry."
+            ? lang === "zh" ? "由四點或以上的已知坐標，以平面內向量、投影與內積求夾角，並播放同步建構圖。" : "Start from four or more given points, then use in-plane vectors, projections and dot products with animated geometry."
             : activeTab === "centers"
             ? lang === "zh"
               ? "拖曳頂點，播放建構，理解 G、I、O、H。"
