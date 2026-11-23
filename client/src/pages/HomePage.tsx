@@ -75,6 +75,15 @@ const geometryTools: Tool[] = [
     formula: "a · b = |a||b| cos θ",
   },
   {
+    icon: Grid3X3,
+    titleZh: "直線與平面夾角",
+    titleEn: "Lines & planes",
+    descZh: "選擇傾斜平面，逐步推導兩平面或直線與平面的夾角。",
+    descEn: "Explore inclined planes and derive plane–plane or line–plane angles.",
+    path: "/vector?tab=spatial",
+    formula: "cos θ · sin θ · n₁ · n₂ · d",
+  },
+  {
     icon: Move,
     titleZh: "幾何變換",
     titleEn: "Transformations",
@@ -344,8 +353,8 @@ export default function HomePage() {
           </h1>
           <p className="home-hero-description">
             {lang === "zh"
-              ? "你的線性代數學習工作台。從矩陣運算到三角形幾何，把公式、計算與圖像連在一起。"
-              : "Your workspace for learning linear algebra. Connect formulas, calculations and visual intuition—from matrices to triangle geometry."}
+              ? "你的線性代數學習工作台。逐步播放數學推導，從矩陣運算到傾斜平面的夾角，把公式、計算與圖像連在一起。"
+              : "Your workspace for learning linear algebra. Play derivations step by step—from matrix operations to angles between inclined planes."}
           </p>
           <div className="home-hero-actions">
             <Link

@@ -211,7 +211,7 @@ function solve2x2(A: number[][]): EigenResult {
     steps.push({
       titleZh: `求特徵向量（λ = ${fmtFrac(lam)}）`,
       titleEn: `Find Eigenvector (λ = ${fmtFrac(lam)})`,
-      latex: `\\mathbf{v}_{${k + 1}} = \\begin{pmatrix} ${fmtFrac(ev[0])} \\\\ ${fmtFrac(ev[1])} \\end{pmatrix} \\quad \\text{（歸一化 / Normalized: } \\begin{pmatrix} ${fmtFrac(evNorm[0])} \\\\ ${fmtFrac(evNorm[1])} \\end{pmatrix}\\text{）}`,
+      latex: `\\mathbf{v}_{${k + 1}} = \\begin{pmatrix} ${fmtFrac(ev[0])} \\\\ ${fmtFrac(ev[1])} \\end{pmatrix} \\quad \\widehat{\\mathbf v}_{${k + 1}}=\\frac{\\mathbf v_{${k + 1}}}{\\|\\mathbf v_{${k + 1}}\\|_2}=\\begin{pmatrix} ${fmtFrac(evNorm[0])} \\\\ ${fmtFrac(evNorm[1])} \\end{pmatrix}`,
       explanationZh: `由方程組 ${fmtFrac(A_lI[0][0])}x + ${fmtFrac(A_lI[0][1])}y = 0，令自由變數求解，得特徵向量。`,
       explanationEn: `From ${fmtFrac(A_lI[0][0])}x + ${fmtFrac(A_lI[0][1])}y = 0, set the free variable to find the eigenvector.`,
     });

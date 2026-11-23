@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 
 export type Lang = "zh" | "en";
 
@@ -290,7 +290,14 @@ const LanguageContext = createContext<LanguageContextType>({
 });
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLang] = useState<Lang>("zh");
+  const [lang, setLang] = useState<Lang>(() => {
+    try { return localStorage.getItem("linear-algebra-lab-language") === "en" ? "en" : "zh"; }
+    catch { return "zh"; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem("linear-algebra-lab-language", lang); }
+    catch { /* Private/restricted storage must not prevent language switching. */ }
+  }, [lang]);
   return (
     <LanguageContext.Provider value={{ lang, setLang, t: translations[lang] }}>
       {children}

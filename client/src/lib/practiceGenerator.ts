@@ -19,6 +19,8 @@ import {
   fmt,
 } from "./matrixMath";
 import { vecAdd, vecSub, vecDot, vecCross, vecMagnitude } from "./vectorMath";
+import { solveLinearSystem } from "./linearSystem";
+import { computeEigen } from "./eigenMath";
 
 // ─── Tolerance ───────────────────────────────────────────────────────────────
 const TOL = 1e-4;
@@ -139,6 +141,7 @@ export function generateMatrixQuestion(
           : "Enter matrix: space-separated elements, semicolons for rows. E.g. 1 2; 3 4",
         answerDisplay: JSON.stringify(answer),
         answerLatex: mLatex(answer),
+        solutionSteps: res.steps,
         checkAnswer: (s) => {
           const m = parseMatrix(s);
           return m !== null && matApproxEq(m, answer);
@@ -157,6 +160,7 @@ export function generateMatrixQuestion(
           : "Enter matrix: space-separated elements, semicolons for rows. E.g. 1 2; 3 4",
         answerDisplay: JSON.stringify(answer),
         answerLatex: mLatex(answer),
+        solutionSteps: res.steps,
         checkAnswer: (s) => {
           const m = parseMatrix(s);
           return m !== null && matApproxEq(m, answer);
@@ -175,6 +179,7 @@ export function generateMatrixQuestion(
           : "Enter matrix: space-separated elements, semicolons for rows. E.g. 1 2; 3 4",
         answerDisplay: JSON.stringify(answer),
         answerLatex: mLatex(answer),
+        solutionSteps: res.steps,
         checkAnswer: (s) => {
           const m = parseMatrix(s);
           return m !== null && matApproxEq(m, answer);
@@ -193,6 +198,7 @@ export function generateMatrixQuestion(
           : "Enter the transposed matrix",
         answerDisplay: JSON.stringify(answer),
         answerLatex: mLatex(answer),
+        solutionSteps: res.steps,
         checkAnswer: (s) => {
           const m = parseMatrix(s);
           return m !== null && matApproxEq(m, answer);
@@ -209,6 +215,7 @@ export function generateMatrixQuestion(
         inputHint: lang === "zh" ? "輸入行列式的數值" : "Enter the determinant value",
         answerDisplay: fmt(answer),
         answerLatex: `= ${fmt(answer)}`,
+        solutionSteps: res.steps,
         checkAnswer: (s) => {
           const v = parseFloat(s.trim());
           return !isNaN(v) && approx(v, answer);
@@ -227,6 +234,7 @@ export function generateMatrixQuestion(
           : "Enter the inverse matrix (decimals allowed)",
         answerDisplay: JSON.stringify(answer),
         answerLatex: mLatex(answer),
+        solutionSteps: res.steps,
         checkAnswer: (s) => {
           const m = parseMatrix(s);
           return m !== null && matApproxEq(m, answer);
@@ -245,6 +253,7 @@ export function generateMatrixQuestion(
           : "Enter the scalar product matrix",
         answerDisplay: JSON.stringify(answer),
         answerLatex: mLatex(answer),
+        solutionSteps: res.steps,
         checkAnswer: (s) => {
           const m = parseMatrix(s);
           return m !== null && matApproxEq(m, answer);
@@ -293,6 +302,7 @@ export function generateLinearSystemQuestion(lang: "zh" | "en" = "zh"): Practice
       : `Enter solution separated by spaces. E.g. ${size === 2 ? "1 -2" : "1 -2 3"} (i.e. x₁ x₂${size === 3 ? " x₃" : ""})`,
     answerDisplay: x.join(", "),
     answerLatex: xLatex,
+    solutionSteps: solveLinearSystem(A, b).steps,
     checkAnswer: (s) => {
       const v = parseVector(s);
       if (!v || v.length !== size) return false;
@@ -320,6 +330,7 @@ export function generateVectorQuestion(
         inputHint: lang === "zh" ? "輸入向量分量，用空格分隔。例：1 -2 3" : "Enter vector components separated by spaces. E.g. 1 -2 3",
         answerDisplay: answer.join(", "),
         answerLatex: vecLatex(answer),
+        solutionSteps: res.steps,
         checkAnswer: (s) => {
           const v = parseVector(s);
           return v !== null && v.length === 3 && answer.every((ai, i) => approx(v[i], ai));
@@ -336,6 +347,7 @@ export function generateVectorQuestion(
         inputHint: lang === "zh" ? "輸入向量分量，用空格分隔。例：1 -2 3" : "Enter vector components separated by spaces. E.g. 1 -2 3",
         answerDisplay: answer.join(", "),
         answerLatex: vecLatex(answer),
+        solutionSteps: res.steps,
         checkAnswer: (s) => {
           const v = parseVector(s);
           return v !== null && v.length === 3 && answer.every((ai, i) => approx(v[i], ai));
@@ -352,6 +364,7 @@ export function generateVectorQuestion(
         inputHint: lang === "zh" ? "輸入內積的數值" : "Enter the dot product value",
         answerDisplay: fmt(answer),
         answerLatex: `= ${fmt(answer)}`,
+        solutionSteps: res.steps,
         checkAnswer: (s) => {
           const v = parseFloat(s.trim());
           return !isNaN(v) && approx(v, answer);
@@ -372,6 +385,7 @@ export function generateVectorQuestion(
         inputHint: lang === "zh" ? "輸入叉積向量分量，用空格分隔。例：1 -2 3" : "Enter cross product vector components separated by spaces. E.g. 1 -2 3",
         answerDisplay: answer.join(", "),
         answerLatex: vecLatex(answer),
+        solutionSteps: res.steps,
         checkAnswer: (s) => {
           const v = parseVector(s);
           return v !== null && v.length === 3 && answer.every((ai, i) => approx(v[i], ai));
@@ -391,6 +405,7 @@ export function generateVectorQuestion(
         inputHint: lang === "zh" ? "輸入向量的模（長度）" : "Enter the magnitude (length) of the vector",
         answerDisplay: fmt(answer),
         answerLatex: `= ${fmt(answer)}`,
+        solutionSteps: res.steps,
         checkAnswer: (s) => {
           const v = parseFloat(s.trim());
           return !isNaN(v) && approx(v, answer);
@@ -439,13 +454,14 @@ export function generateEigenQuestion(lang: "zh" | "en" = "zh"): PracticeQuestio
       : "Enter eigenvalues sorted ascending, separated by spaces. E.g. -3 2",
     answerDisplay: eigenStr,
     answerLatex: eigenLatex,
+    solutionSteps: computeEigen(A).steps.map(step => ({ descriptionZh: step.explanationZh, descriptionEn: step.explanationEn, latex: step.latex })),
     checkAnswer: (s) => {
       const v = parseVector(s);
       if (!v || v.length !== 2) return false;
       const sorted = [...v].sort((a, b) => a - b);
       return eigenvalues.every((ev, i) => approx(sorted[i], ev));
     },
-    solutionLatex: `\\text{特徵多項式：} \\det(A - \\lambda I) = (${eigenvalues[0]} - \\lambda)(${eigenvalues[1]} - \\lambda) = 0`,
+    solutionLatex: `${lang === "zh" ? "\\text{特徵多項式：}" : "\\text{Characteristic polynomial:}"} \\det(A - \\lambda I) = (${eigenvalues[0]} - \\lambda)(${eigenvalues[1]} - \\lambda) = 0`,
   };
 }
 

@@ -118,6 +118,11 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
           icon: Compass,
         },
         {
+          path: "/vector?tab=spatial",
+          label: lang === "zh" ? "直線與平面夾角" : "Lines & planes",
+          icon: Grid3X3,
+        },
+        {
           path: "/vector?tab=centers",
           label: lang === "zh" ? "三角形中心實驗" : "Triangle centers",
           icon: Triangle,
@@ -150,7 +155,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
     const [pathname, query] = path.split("?");
     if (pathname !== location) return false;
     if (query) return tab === new URLSearchParams(query).get("tab");
-    return pathname !== "/vector" || (tab !== "centers" && tab !== "dse");
+    return pathname !== "/vector" || !["centers", "dse", "spatial"].includes(tab ?? "");
   }
 
   return (
@@ -226,7 +231,9 @@ function Layout() {
     "/matrix": t.navMatrix,
     "/system": t.navLinearSystem,
     "/vector":
-      tab === "centers"
+      tab === "spatial"
+        ? lang === "zh" ? "直線與平面夾角" : "Lines & planes"
+        : tab === "centers"
         ? lang === "zh"
           ? "三角形中心實驗"
           : "Triangle centers"

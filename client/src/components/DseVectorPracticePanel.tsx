@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, Eye, EyeOff, RefreshCw, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import KatexRenderer from "@/components/KatexRenderer";
+import StepDisplay from "@/components/StepDisplay";
+import { solutionPlaybackSteps } from "@/lib/derivationPlayback";
 import { getDseVectorPracticeQuestions, type DseVectorTopic } from "@/lib/dseVectorPractice";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -174,11 +176,14 @@ export default function DseVectorPracticePanel() {
           <div className="overflow-x-auto">
             <KatexRenderer latex={currentQuestion.answerLatex} displayMode={true} />
           </div>
-          {currentQuestion.solutionLatex && (
-            <div className="overflow-x-auto border-t border-border pt-3">
-              <KatexRenderer latex={currentQuestion.solutionLatex} displayMode={true} />
-            </div>
-          )}
+          <StepDisplay
+            title={lang === "zh" ? "逐步評分推導" : "Step-by-step mark scheme"}
+            steps={[
+              { description: lang === "zh" ? "辨識已知量及所求" : "Identify the given information and unknown", latex: currentQuestion.questionLatex },
+              ...(currentQuestion.solutionSteps ?? solutionPlaybackSteps(currentQuestion.solutionLatex ?? currentQuestion.answerLatex, lang)),
+              { description: lang === "zh" ? "整理答案及其意義" : "State the result and its meaning", latex: currentQuestion.answerLatex },
+            ]}
+          />
         </div>
       )}
     </div>

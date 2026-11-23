@@ -205,3 +205,17 @@
 Phase 19 verification: 64 Vitest tests and TypeScript passed. Real browser checks passed for mouse and 375px touch vertex dragging, keyboard adjustments, true-plane 3D editing, animated construction drawing, play/pause/restart/single-step, invalid-input recovery, all routes, English copy, and mobile drawer navigation. GitHub Pages build passed with route-level lazy loading; homepage entry JS is separated from the 4.8 MB Plotly module.
 
 Phase 19 GitHub sync verified: checkpoint 35f658b41e688ae28425581d6f9cd976454eaa40 was pushed immediately to main. GitHub Pages workflow 45176932001 completed successfully. The final record checkpoint is also pushed immediately after saving.
+
+## Phase 20: Global Derivation Playback & Spatial Angles
+
+- [x] 共用推導播放元件：播放／暫停／重播／單步／速度／全覽，支援每個計算主題與練習詳解
+- [x] 各頁推導整合：矩陣、聯立方程、特徵值、矩陣冪次、變換、向量、四心、知識庫
+- [x] 兩平面夾角：法向量／三點／傾斜平面輸入、精確式、LaTeX 步驟及 3D 圖
+- [x] 直線與平面夾角：方向向量與法向量，正確區分互餘角，精確式及 3D 圖
+- [x] 共用 3D 操作：標準視角、旋轉／平移、縮放、重設、投影、放大檢視和手機相容
+- [x] 全套測試、TypeScript、建置、桌面／手機操作驗收
+- [ ] checkpoint 後即時同步 GitHub，確認 Pages 部署
+
+Phase 20 verification: all 255 Vitest tests, TypeScript and GitHub Pages production build passed. The legacy documents-router test needed one network-timeout retry; no server changes were made. Actual browser checks passed for every calculator timeline, both system-method players, knowledge examples, random practice and DSE mark schemes. Desktop and 375px touch checks verified XY/YZ/XZ views, orbit/pan, zoom, fit/reset, perspective/orthographic, axes/grid/wheel toggles, expanded-view camera retention and focus return, and no horizontal overflow. Spatial checks covered synchronized construction stages, inclined and offset planes, supplementary opening, line–plane complementary angles, parallel/perpendicular presets, three-point/two-point definitions and invalid-normal recovery. Negative 3D vectors remained fully in range without camera resets. Existing four-centre keyboard/touch dragging and construction playback were preserved. Language selection now persists across reloads, and eigenvector formulas no longer contain mixed-language normalization labels.
+
+Precision scope: new vector and spatial-angle derivations use exact fractions, simplified radicals and symbolic inverse-trigonometric expressions. Plotly coordinates are numerical visualization values. Existing numerical eigenvalue/diagonalization outputs are explicitly labelled approximate, with eigenpair residual guards; this phase does not claim to replace those solvers with a fully symbolic engine.

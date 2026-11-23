@@ -8,6 +8,8 @@ import KatexRenderer from "@/components/KatexRenderer";
 import VectorPlot2D from "@/components/VectorPlot2D";
 import VectorPlot3D from "@/components/VectorPlot3D";
 import TriangleCentersWorkspace from "@/components/TriangleCentersWorkspace";
+import SpatialAnglesPanel from "@/components/SpatialAnglesPanel";
+import type { DerivationMode } from "@/lib/derivationPlayback";
 import {
   vecAdd,
   vecSub,
@@ -20,7 +22,7 @@ import {
   vecToLatex,
   type Vec3,
 } from "@/lib/vectorMath";
-import { fmt, sqrtExact, angleExact } from "@/lib/matrixMath";
+import { exactVectorDerivation } from "@/lib/vectorExact";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, CheckCircle2, Triangle, BarChart2 } from "lucide-react";
 import PracticePanel from "@/components/PracticePanel";
@@ -67,6 +69,7 @@ const VIS_OPS: VecOp[] = [
   "sub",
   "dot",
   "cross",
+  "mag",
   "angle",
   "normalize",
   "projection",
@@ -132,7 +135,7 @@ export default function VectorPage() {
   const [, navigate] = useLocation();
   const search = useSearch();
   const requestedTab = new URLSearchParams(search).get("tab") ?? "calc";
-  const activeTab = ["calc", "centers", "practice", "dse"].includes(
+  const activeTab = ["calc", "centers", "spatial", "practice", "dse"].includes(
     requestedTab
   )
     ? requestedTab
@@ -148,6 +151,8 @@ export default function VectorPage() {
   const [vecB, setVecB] = useState([3, 1]);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [derivation, setDerivation] = useState<{ index: number; mode: DerivationMode }>({ index: 0, mode: "all" });
+  const onDerivationStep = useCallback((index: number, mode: DerivationMode) => setDerivation(previous => previous.index === index && previous.mode === mode ? previous : { index, mode }), []);
 
   function switchDim(d: Dim) {
     setDim(d);
@@ -177,7 +182,12 @@ export default function VectorPage() {
   function handleCalculate() {
     setError(null);
     setResult(null);
+    setDerivation({ index: 0, mode: "all" });
     try {
+      if ([...vecA, ...vecB].some(value => !Number.isFinite(value) || Math.abs(value) > 1_000_000)) {
+        setError(lang === "zh" ? "請輸入有限數值，每個分量的絕對值不可超過 1,000,000。" : "Enter finite values with each component between −1,000,000 and 1,000,000.");
+        return;
+      }
       let res: any;
       switch (op) {
         case "add":
@@ -214,6 +224,9 @@ export default function VectorPage() {
       if (res.error) {
         setError(t.errInvalidInput);
       } else {
+        const exact = exactVectorDerivation(op, vecA, vecB);
+        res.exactLatex = exact.latex;
+        res.steps = exact.steps.map((step, index) => index === exact.steps.length - 1 ? { ...step, value: res.vector ?? res.scalar ?? res.projVector } : step);
         setResult(res);
       }
     } catch {
@@ -242,6 +255,9 @@ export default function VectorPage() {
   const availableOps = dim === "2d" ? OPS_2D : OPS_3D;
   const needsB = NEEDS_B.includes(op);
   const showVis = VIS_OPS.includes(op);
+  const resultStep = result?.steps?.findIndex((step: { value?: unknown }) => step.value !== undefined) ?? -1;
+  const constructionStage = derivation.mode === "all" ? 2 : derivation.index >= (resultStep >= 0 ? resultStep : (result?.steps?.length ?? 1) - 1) ? 2 : derivation.index >= 1 ? 1 : 0;
+  const revealResult = constructionStage === 2;
 
   // Build visualization vector arrays
   // For projection: show a (blue), b (red), and the projection vector is shown via projVector prop
@@ -252,7 +268,7 @@ export default function VectorPage() {
       ? [{ x: vecB[0], y: vecB[1], color: "#DC2626", label: "b" }]
       : []),
     // For non-projection ops, show result vector
-    ...(!isProjection && result?.vector
+    ...(!isProjection && revealResult && result?.vector
       ? [
           {
             x: result.vector[0],
@@ -278,7 +294,7 @@ export default function VectorPage() {
         ]
       : []),
     // For non-projection ops, show result vector
-    ...(!isProjection && result?.vector
+    ...(!isProjection && revealResult && result?.vector
       ? [
           {
             x: result.vector[0],
@@ -293,13 +309,13 @@ export default function VectorPage() {
 
   // Projection-specific visualization data
   const projVec2D =
-    isProjection && result?.projVector ? result.projVector : undefined;
+    isProjection && revealResult && result?.projVector ? result.projVector : undefined;
   const perpVec2D =
-    isProjection && result?.perpVector ? result.perpVector : undefined;
+    isProjection && revealResult && result?.perpVector ? result.perpVector : undefined;
   const projVec3D =
-    isProjection && result?.projVector ? result.projVector : undefined;
+    isProjection && revealResult && result?.projVector ? result.projVector : undefined;
   const perpVec3D =
-    isProjection && result?.perpVector ? result.perpVector : undefined;
+    isProjection && revealResult && result?.perpVector ? result.perpVector : undefined;
 
   const labels = dim === "2d" ? ["x", "y"] : ["x", "y", "z"];
 
@@ -311,7 +327,9 @@ export default function VectorPage() {
           className="text-2xl font-bold text-foreground"
           style={{ fontFamily: "'IBM Plex Serif', serif" }}
         >
-          {activeTab === "centers"
+          {activeTab === "spatial"
+            ? lang === "zh" ? "空間幾何 · 直線與平面夾角" : "Spatial geometry · lines & planes"
+            : activeTab === "centers"
             ? lang === "zh"
               ? "幾何探索 · 三角形四心"
               : "Geometry lab · triangle centres"
@@ -322,7 +340,9 @@ export default function VectorPage() {
               : t.vectorCalc}
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          {activeTab === "centers"
+          {activeTab === "spatial"
+            ? lang === "zh" ? "探索任意傾斜平面，以法向量、方向向量和建構圖理解夾角。" : "Explore inclined planes through normals, directions and animated geometry."
+            : activeTab === "centers"
             ? lang === "zh"
               ? "拖曳頂點，播放建構，理解 G、I、O、H。"
               : "Drag vertices, play constructions and explore G, I, O, H."
@@ -346,6 +366,7 @@ export default function VectorPage() {
             <Triangle className="w-3 h-3 mr-1" />
             {lang === "zh" ? "三角形四心" : "Triangle Centers"}
           </TabsTrigger>
+          <TabsTrigger value="spatial">{lang === "zh" ? "直線／平面夾角" : "Lines & planes"}</TabsTrigger>
           <TabsTrigger value="practice">{t.practiceMode}</TabsTrigger>
           <TabsTrigger value="dse">
             {lang === "zh" ? "DSE Style 題組" : "DSE-Style Practice"}
@@ -369,6 +390,7 @@ export default function VectorPage() {
         <TabsContent value="centers" className="mt-5">
           <TriangleCentersWorkspace />
         </TabsContent>
+        <TabsContent value="spatial" className="mt-5"><SpatialAnglesPanel /></TabsContent>
 
         {/* ── Calculator Tab ── */}
         <TabsContent value="calc" className="mt-4 space-y-4">
@@ -585,6 +607,7 @@ export default function VectorPage() {
                     lang={lang}
                     projVector={projVec2D}
                     perpVector={perpVec2D}
+                    constructionStage={constructionStage}
                   />
                 ) : (
                   <VectorPlot3D
@@ -593,6 +616,7 @@ export default function VectorPage() {
                     lang={lang}
                     projVector={projVec3D}
                     perpVector={perpVec3D}
+                    constructionStage={constructionStage}
                   />
                 )
               ) : (
@@ -662,50 +686,12 @@ export default function VectorPage() {
                   </span>
                 </div>
                 <div className="result-row overflow-x-auto">
-                  {result.vector && (
-                    <KatexRenderer
-                      latex={vecToLatex(result.vector)}
-                      displayMode={true}
-                    />
-                  )}
-                  {result.scalar !== undefined &&
-                    (() => {
-                      if (op === "angle") {
-                        const { deg: dStr, rad: rStr } = angleExact(
-                          result.scalar
-                        );
-                        return (
-                          <KatexRenderer
-                            latex={`= ${dStr} = ${rStr}`}
-                            displayMode={true}
-                          />
-                        );
-                      }
-                      if (op === "mag") {
-                        // Reconstruct sumSq from vecA to show exact sqrt form
-                        const sumSq = vecA.reduce(
-                          (s: number, v: number) => s + v * v,
-                          0
-                        );
-                        return (
-                          <KatexRenderer
-                            latex={`= ${sqrtExact(sumSq)}`}
-                            displayMode={true}
-                          />
-                        );
-                      }
-                      return (
-                        <KatexRenderer
-                          latex={`= ${fmt(result.scalar)}`}
-                          displayMode={true}
-                        />
-                      );
-                    })()}
+                  <KatexRenderer latex={result.exactLatex} displayMode />
                 </div>
               </div>
 
               {result.steps && result.steps.length > 0 && (
-                <StepDisplay steps={result.steps} title={t.steps} />
+                <StepDisplay steps={result.steps} title={t.steps} onStepChange={onDerivationStep} />
               )}
             </div>
           )}

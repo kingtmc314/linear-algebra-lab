@@ -2,6 +2,7 @@
 // Shows vectors as arrows with parallelogram for addition/subtraction,
 // angle arc for dot product, and proper GeoGebra-style labeling.
 import { useEffect, useRef, useMemo } from "react";
+import type { Config } from "plotly.js";
 
 interface Vec2D {
   x: number;
@@ -16,15 +17,18 @@ interface VectorPlot2DProps {
   lang?: "zh" | "en";
   projVector?: number[];
   perpVector?: number[];
+  constructionStage?: number;
 }
 
 function fmt(n: number): string {
   const r = parseFloat(n.toFixed(3));
-  return Number.isInteger(r) ? String(r) : r.toString();
+  return Number.isInteger(n) ? String(n) : `≈${r}`;
 }
 
-export default function VectorPlot2D({ vectors, op = "add", lang = "zh", projVector, perpVector }: VectorPlot2DProps) {
+export default function VectorPlot2D({ vectors, op = "add", lang = "zh", projVector, perpVector, constructionStage = 2 }: VectorPlot2DProps) {
   const divRef = useRef<HTMLDivElement>(null);
+  const renderVersion = useRef(0);
+  const renderQueue = useRef<Promise<unknown>>(Promise.resolve());
 
   const vecA = vectors.find((v) => v.label === "a");
   const vecB = vectors.find((v) => v.label === "b");
@@ -36,6 +40,7 @@ export default function VectorPlot2D({ vectors, op = "add", lang = "zh", projVec
       1,
       ...allVecs.flatMap((v) => [Math.abs(v.x), Math.abs(v.y)]),
       ...(projVector ? [Math.abs(projVector[0] ?? 0), Math.abs(projVector[1] ?? 0)] : []),
+      ...(vecA && vecB && (op === "add" || op === "sub") ? [Math.abs(vecA.x + (op === "sub" ? -vecB.x : vecB.x)), Math.abs(vecA.y + (op === "sub" ? -vecB.y : vecB.y))] : []),
     );
     const pad = maxCoord * 0.35 + 1;
     const range: [number, number] = [-(maxCoord + pad), maxCoord + pad];
@@ -46,7 +51,7 @@ export default function VectorPlot2D({ vectors, op = "add", lang = "zh", projVec
     const anns: any[] = [];
 
     // ── Parallelogram for add/sub ──────────────────────────────────────────
-    if ((op === "add" || op === "sub") && vecA && vecB) {
+    if (constructionStage >= 1 && (op === "add" || op === "sub") && vecA && vecB) {
       const bx = op === "sub" ? -vecB.x : vecB.x;
       const by = op === "sub" ? -vecB.y : vecB.y;
       data.push({
@@ -82,7 +87,7 @@ export default function VectorPlot2D({ vectors, op = "add", lang = "zh", projVec
     }
 
     // ── Angle arc for dot/angle ────────────────────────────────────────────
-    if ((op === "dot" || op === "angle") && vecA && vecB) {
+    if (constructionStage >= 1 && (op === "dot" || op === "angle") && vecA && vecB) {
       const magA = Math.sqrt(vecA.x ** 2 + vecA.y ** 2);
       const magB = Math.sqrt(vecB.x ** 2 + vecB.y ** 2);
       if (magA > 0 && magB > 0) {
@@ -121,7 +126,7 @@ export default function VectorPlot2D({ vectors, op = "add", lang = "zh", projVec
           mode: "text",
           x: [arcR * 1.7 * Math.cos(midTheta)],
           y: [arcR * 1.7 * Math.sin(midTheta)],
-          text: [`θ=${fmt(angleDeg)}°`],
+          text: ["θ"],
           textfont: { color: "#7C3AED", size: 11, family: "IBM Plex Mono, monospace" },
           hoverinfo: "skip",
           showlegend: false,
@@ -131,7 +136,7 @@ export default function VectorPlot2D({ vectors, op = "add", lang = "zh", projVec
     }
 
     // ── Projection visualization ───────────────────────────────────────────
-    if (op === "projection" && vecA && vecB && projVector && perpVector) {
+    if (constructionStage >= 2 && op === "projection" && vecA && vecB && projVector && perpVector) {
       const px = projVector[0], py = projVector[1];
       const bMag = Math.sqrt(vecB.x ** 2 + vecB.y ** 2);
       if (bMag > 0) {
@@ -249,7 +254,7 @@ export default function VectorPlot2D({ vectors, op = "add", lang = "zh", projVec
     });
 
     return { plotData: data, annotations: anns, axisRange: range };
-  }, [vectors, op, lang, vecA, vecB, vecR, projVector, perpVector]);
+  }, [vectors, op, lang, vecA, vecB, vecR, projVector, perpVector, constructionStage]);
 
   useEffect(() => {
     if (!divRef.current) return;
@@ -301,28 +306,36 @@ export default function VectorPlot2D({ vectors, op = "add", lang = "zh", projVec
       },
       annotations,
       dragmode: "pan",
+      uirevision: "vector-plane",
     };
 
-    const config = {
+    const config: Partial<Config> = {
       responsive: true,
       displayModeBar: true,
       modeBarButtonsToRemove: ["lasso2d", "select2d", "autoScale2d"],
       displaylogo: false,
-      scrollZoom: true,
+      scrollZoom: false,
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    import("plotly.js-dist-min").then((Plotly: any) => {
-      Plotly.react(divRef.current!, plotData, layout, config);
+    const node = divRef.current;
+    const version = ++renderVersion.current;
+    renderQueue.current = renderQueue.current.catch(() => undefined).then(async () => {
+      const module = await import("plotly.js-dist-min");
+      const Plotly = module.default ?? module;
+      if (version === renderVersion.current && node.isConnected) await Plotly.react(node, plotData, layout as any, config);
     });
+  }, [plotData, annotations, axisRange]);
 
+  useEffect(() => {
+    const node = divRef.current;
     return () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      import("plotly.js-dist-min").then((Plotly: any) => {
-        if (divRef.current) Plotly.purge(divRef.current);
+      ++renderVersion.current;
+      renderQueue.current.catch(() => undefined).then(async () => {
+        const module = await import("plotly.js-dist-min");
+        if (node) (module.default ?? module).purge(node);
       });
     };
-  }, [plotData, annotations, axisRange]);
+  }, []);
 
   return (
     <div

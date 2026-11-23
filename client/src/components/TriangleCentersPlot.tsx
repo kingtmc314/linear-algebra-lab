@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo } from "react";
 import {
   buildTriangleCenterGeometry,
   type Segment3,
@@ -10,6 +10,7 @@ import type {
   VertexName,
 } from "@/lib/triangleInteraction";
 import TrianglePlanePlot from "./TrianglePlanePlot";
+import Plot3DScene from "./Plot3DScene";
 
 export type TriangleLayerVisibility = ConstructionLayers;
 interface Props {
@@ -58,8 +59,6 @@ function TriangleSpacePlot({
   layers,
   visibleCenters,
 }: Props) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [error, setError] = useState(false);
   const data = useMemo(() => {
     const geometry = buildTriangleCenterGeometry(A, B, C, centers);
     const points = [A, B, C, A];
@@ -138,7 +137,7 @@ function TriangleSpacePlot({
       textposition: "top center",
       marker: { size: 6, color: ["#2563eb", "#dc2626", "#16a34a"] },
       name: lang === "zh" ? "頂點" : "Vertices",
-      hovertemplate: "%{text}: (%{x:.3f}, %{y:.3f}, %{z:.3f})<extra></extra>",
+      hovertemplate: "%{text}: ≈ (%{x:.3f}, %{y:.3f}, %{z:.3f})<extra></extra>",
     });
     const centerPoints = [
       { name: "G" as const, point: centers.centroid, color: colors.medians },
@@ -169,74 +168,27 @@ function TriangleSpacePlot({
           color: centerPoints.map(p => p.color),
         },
         name: lang === "zh" ? "四心" : "Centres",
-        hovertemplate: "%{text}: (%{x:.3f}, %{y:.3f}, %{z:.3f})<extra></extra>",
+        hovertemplate:
+          "%{text}: ≈ (%{x:.3f}, %{y:.3f}, %{z:.3f})<extra></extra>",
       });
     return traces;
   }, [A, B, C, centers, lang, layers, visibleCenters]);
-  useEffect(() => {
-    const element = ref.current;
-    if (!element) return;
-    let cancelled = false;
-    import("plotly.js-dist-min")
-      .then(async module => {
-        if (cancelled) return;
-        const Plotly = module.default ?? module;
-        await Plotly.react(
-          element,
-          data,
-          {
-            paper_bgcolor: "#fbfaf6",
-            plot_bgcolor: "#fbfaf6",
-            uirevision: "triangle-space",
-            margin: { l: 0, r: 0, t: 55, b: 0 },
-            font: { family: "IBM Plex Sans, sans-serif", color: "#334155" },
-            legend: { orientation: "h", y: 1.08, font: { size: 10 } },
-            scene: {
-              aspectmode: "data",
-              xaxis: { title: { text: "x" } },
-              yaxis: { title: { text: "y" } },
-              zaxis: { title: { text: "z" } },
-            },
-          },
-          { responsive: true, displaylogo: false, scrollZoom: true }
-        );
-        if (!cancelled) setError(false);
-      })
-      .catch(() => {
-        if (!cancelled) setError(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [data]);
-  useEffect(() => {
-    const element = ref.current;
-    if (!element) return;
-    const observer = new ResizeObserver(() =>
-      import("plotly.js-dist-min").then(module => {
-        if (element.isConnected && element.classList.contains("js-plotly-plot"))
-          (module.default ?? module).Plots.resize(element);
-      })
-    );
-    observer.observe(element);
-    return () => {
-      observer.disconnect();
-      import("plotly.js-dist-min").then(module =>
-        (module.default ?? module).purge(element)
-      );
-    };
-  }, []);
+  const layout = useMemo(
+    () => ({
+      margin: { l: 0, r: 0, t: 55, b: 5 },
+      legend: { orientation: "h", y: 1.1, font: { size: 10 } },
+    }),
+    []
+  );
   return (
-    <div className="rounded-xl border border-border overflow-hidden">
-      <div ref={ref} className="w-full" style={{ height: 450 }} />
-      {error && (
-        <p role="alert" className="p-3 text-sm text-destructive">
-          {lang === "zh"
-            ? "三維圖載入失敗，請切換平面圖或重新整理。"
-            : "The 3D chart could not load. Switch to 2D or refresh."}
-        </p>
-      )}
-    </div>
+    <Plot3DScene
+      data={data}
+      layout={layout}
+      lang={lang}
+      name={lang === "zh" ? "三角形四心・三維" : "Triangle centres · 3D"}
+      uirevision="triangle-space"
+      height={450}
+    />
   );
 }
 export default function TriangleCentersPlot(props: Props) {

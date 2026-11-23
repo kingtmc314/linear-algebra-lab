@@ -3,9 +3,11 @@
  * Shared practice mode component used across all calculator pages.
  * Generates random questions, accepts student answers, and provides immediate feedback.
  */
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import KatexRenderer from "@/components/KatexRenderer";
+import StepDisplay from "@/components/StepDisplay";
+import { solutionPlaybackSteps, type DerivationStep } from "@/lib/derivationPlayback";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle, RefreshCw, Eye, EyeOff } from "lucide-react";
 
@@ -22,6 +24,8 @@ export interface PracticeQuestion {
   checkAnswer: (input: string) => boolean;
   /** Optional step-by-step explanation */
   solutionLatex?: string;
+  /** Original mathematical steps, preferred over a monolithic solution. */
+  solutionSteps?: DerivationStep[];
 }
 
 interface PracticePanelProps {
@@ -39,6 +43,16 @@ export default function PracticePanel({ generateQuestion, moduleLabel }: Practic
   const [feedback, setFeedback] = useState<"correct" | "incorrect" | null>(null);
   const [showAnswer, setShowAnswer] = useState(false);
   const [attempts, setAttempts] = useState(0);
+  const previousLanguage = useRef(lang);
+  useEffect(() => {
+    if (previousLanguage.current === lang) return;
+    previousLanguage.current = lang;
+    setQuestion(generateQuestion());
+    setUserInput("");
+    setFeedback(null);
+    setShowAnswer(false);
+    setAttempts(0);
+  }, [lang, generateQuestion]);
 
   const handleNewQuestion = useCallback(() => {
     setQuestion(generateQuestion());
@@ -160,14 +174,13 @@ export default function PracticePanel({ generateQuestion, moduleLabel }: Practic
           <div className="overflow-x-auto">
             <KatexRenderer latex={question.answerLatex} displayMode={true} />
           </div>
-          {question.solutionLatex && (
-            <div className="mt-2 pt-2 border-t border-border overflow-x-auto">
-              <p className="text-xs text-muted-foreground mb-1">
-                {lang === "zh" ? "解題過程：" : "Solution:"}
-              </p>
-              <KatexRenderer latex={question.solutionLatex} displayMode={true} />
-            </div>
-          )}
+          <StepDisplay
+            title={lang === "zh" ? "解題推導" : "Solution derivation"}
+            steps={question.solutionSteps ?? (question.solutionLatex ? solutionPlaybackSteps(question.solutionLatex, lang) : [
+              { description: lang === "zh" ? "確認題目要求" : "Identify the required result", latex: question.questionLatex },
+              { description: lang === "zh" ? "參考結果" : "Reference result", latex: question.answerLatex },
+            ])}
+          />
         </div>
       )}
     </div>
