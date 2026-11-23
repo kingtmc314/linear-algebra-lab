@@ -228,10 +228,12 @@ Phase 20 GitHub sync verified: feature checkpoint e7a11ebd4066d2f20f2f4e368c23ff
 - [x] 兩平面夾角主解法使用交線方向與垂直投影向量；直線與平面夾角使用平面內向量投影，所有步驟不用平面方程
 - [x] 精確 LaTeX 推導與 3D 圖同步顯示真正已知點；平面方程只放可折疊課外知識
 - [x] 知識庫相關條目同步採已知點及純向量主解法，保持雙語，加入四點例題同步 3D 圖
-- [x] 主工具支援 A–Z 及小寫 Greek 點名稱；改名保留點選，精確推導与圖標籤一致
+- [x] 主工具支援 A–Z 及小寫 Greek 點名稱；改名保留點選，精確推導與圖標籤一致
 - [x] 全套測試、TypeScript、生產建置及桌面／手機操作驗收
-- [ ] 保存 checkpoint 後立即同步 GitHub，確認同 SHA 的 Pages 部署
+- [x] 保存 checkpoint 後立即同步 GitHub，確認同 SHA 的 Pages 部署
 
 Phase 21 verification: 326 Vitest tests across 19 files, TypeScript, and the GitHub Pages production build passed. This includes 71 new tests for point-defined geometry, exact projections, arbitrary inclined planes, coplanar face selections, invalid and extreme inputs, Greek labels, KaTeX, actual rays, supplementary arcs, and stable six-stage bounds. Actual desktop and 375px touch browser checks passed for the shared four/eight-point pool, add/rename/remove (including α), three/four-vertex selections, line endpoint changes, invalid-input recovery, inclined/parallel/perpendicular examples, exact inverse-cosine line-plane results, optional read-only enrichment, six-stage playback, preserved camera/bounds, expanded-view camera/focus return, both knowledge-card diagrams, no horizontal overflow, and bilingual persistence. Browser page errors were empty. The initially incorrect test expectation for the Chinese HTML locale was corrected to zh-Hant; no application language change was required.
 
 Precision and teaching scope: all primary angle inputs are shared given points (4–26). Shared-edge plane angles use in-plane vectors perpendicular to the shared edge; arbitrary plane pairs use auxiliary vectors obtained by cross products, never Cartesian plane equations. Line-plane angles use an exact in-plane Gram projection and a cosine/dot-product calculation, with a guarded zero-projection perpendicular case. Equivalent plane equations are read-only and initially collapsed in enrichment. Actual named points and point-derived vectors retain their coordinates/lengths; only explicitly direction-labelled auxiliary arrows are rescaled for viewing.
+
+Phase 21 GitHub sync verified: feature checkpoint 06c0fcd90dd2969c1d29e603387cd7e469adf6ed was pushed immediately to GitHub main, with matching main SHA confirmed. GitHub Pages workflow 45217161218 completed successfully for that exact SHA. All todo items are now completed; this final completion-record checkpoint is likewise immediately pushed and its own Pages deployment checked before delivery.
