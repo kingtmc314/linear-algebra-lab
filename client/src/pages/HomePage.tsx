@@ -89,9 +89,9 @@ const geometryTools: Tool[] = [
     icon: Grid3X3,
     titleZh: "直線與平面夾角",
     titleEn: "Lines & planes",
-    descZh: "由四點或以上的已知坐標，以向量投影逐步求空間夾角。",
+    descZh: "由四點以上，以向量截面及法向量探索二面角，辨別較小角與補角。",
     descEn:
-      "Use four or more given points and vector projections to derive spatial angles.",
+      "Use four or more points, vector sections and normals to explore dihedral angles and supplementary openings.",
     path: "/vector?tab=spatial",
     formula: "AB · AC · AD → projection → θ",
   },

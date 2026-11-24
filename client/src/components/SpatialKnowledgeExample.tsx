@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import Plot3DScene from "@/components/Plot3DScene";
 import StepDisplay from "@/components/StepDisplay";
+import PlaneNormalConcept from "@/components/PlaneNormalConcept";
 import type { KnowledgeLessonStep } from "@/lib/Phase20knowledge";
 import {
   computePointSpatialAngle,
@@ -82,6 +83,9 @@ export default function SpatialKnowledgeExample({
           {scene.note}
         </p>
       </figure>
+      {mode === "plane-plane" && (
+        <PlaneNormalConcept result={result} lang={lang} />
+      )}
     </div>
   );
 }

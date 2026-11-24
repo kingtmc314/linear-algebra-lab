@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import KatexRenderer from "@/components/KatexRenderer";
 import StepDisplay from "@/components/StepDisplay";
 import Plot3DScene from "@/components/Plot3DScene";
+import PlaneNormalConcept from "@/components/PlaneNormalConcept";
 import { useLanguage } from "@/contexts/LanguageContext";
 import {
   computePointSpatialAngle,
@@ -188,6 +189,7 @@ export default function SpatialAnglesPanel() {
     pointPreset("right")
   );
   const nextPointId = useRef(26);
+  const normalConceptRef = useRef<HTMLDivElement>(null);
   const [removalNotice, setRemovalNotice] = useState<{
     label: string;
     used: boolean;
@@ -452,6 +454,30 @@ export default function SpatialAnglesPanel() {
             {text(lang, ...presetLabels[which])}
           </Button>
         ))}
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="min-h-11 max-w-full whitespace-normal border-primary/30 text-left text-xs text-primary"
+          data-testid="normal-concept-demo"
+          onClick={() => {
+            setMode("plane-plane");
+            loadPreset("sloping");
+            requestAnimationFrame(() => {
+              const container = normalConceptRef.current;
+              const details = container?.querySelector("details");
+              if (details) details.open = true;
+              container?.scrollIntoView({ behavior: "auto", block: "start" });
+              details?.querySelector("summary")?.focus({ preventScroll: true });
+            });
+          }}
+        >
+          {text(
+            lang,
+            "Normal-angle demo · 45° / 135°",
+            "法向量面角示範 · 45°／135°"
+          )}
+        </Button>
         <Button
           type="button"
           size="sm"
@@ -839,13 +865,22 @@ export default function SpatialAnglesPanel() {
           onStepChange={onStepChange}
         />
       )}
+      {result && mode === "plane-plane" && (
+        <div ref={normalConceptRef} className="min-w-0 scroll-mt-24">
+          <PlaneNormalConcept
+            result={result}
+            lang={lang}
+            supplementary={selectedSupplement}
+          />
+        </div>
+      )}
       {angle && (
         <details className="min-w-0 rounded-xl border border-border bg-card">
           <summary className="min-h-11 cursor-pointer px-4 py-3 text-sm font-semibold text-muted-foreground">
             {text(
               lang,
-              "Enrichment: plane equations and normals",
-              "課外知識：平面方程與法向量"
+              "Enrichment: equivalent plane equations (not the main method)",
+              "課外知識：等價平面方程（非主解法）"
             )}
           </summary>
           <div className="space-y-3 border-t border-border p-4">
