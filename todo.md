@@ -247,7 +247,7 @@ Phase 21 GitHub sync verified: feature checkpoint 06c0fcd90dd2969c1d29e603387cd7
 - [x] 可行區域、目標直線與精確頂點圖，連接六步推導播放器與目標線／參數模擬
 - [x] 三難度練習變式，每級至少 50 個可生成題目，答錯加入一個後續題目
 - [x] 完整測試、TypeScript、Pages 建置與桌面／375px 手機驗收
-- [ ] checkpoint 後立即同步 GitHub，確認相同 SHA 的 Pages 部署
+- [x] checkpoint 後立即同步 GitHub，確認相同 SHA 的 Pages 部署
 
 Phase 22 verification: all 700 Vitest tests across 21 files, TypeScript, the GitHub Pages production build, and git diff --check passed. The exact LP engine uses BigInt rational arithmetic and Fourier–Motzkin elimination; feasibility and objective ranges do not depend on the existence of vertices. Covers strips, lines, points, whole plane, contradictory/duplicate boundaries, constant objectives, finite extrema on unbounded regions, recession generators, complete parameter intervals and isolated values, fraction/decimal/scientific parsing, and strict KaTeX. 2020 Q36 gives k=37 (C); 2023 Q37 gives beta>=4 (D), not the insufficient beta>=-10 condition; source-checked 2024 Q37 uses 5x-2y+c and gives c=25 (C).
 
@@ -256,3 +256,5 @@ Actual desktop and 375px touch browser acceptance passed for all three presets a
 Teaching scope: only closed <=, >=, and = constraints are supported; strict inequalities are explicitly excluded in the UI. No implicit nonnegativity. Visualization levels/sliders are explicitly approximate, but graph clipping/intersections, solver vertices, extrema and parameter results are exact. Viewport clipping never adds mathematical constraints, vertices or optima. Existing point-first spatial angles and triangle construction tools are unchanged.
 
 2024 coefficient source check: Brightmind public suggested solutions, page 11, Q37: https://brightmind.com.hk/userfiles/Suggested%20Solution%20for%202024%20HKDSE%20Maths%20MC%20questions.pdf . The public PDF was downloaded and its text extracted; none of the three user-attached images was reopened with file tools.
+
+Phase 22 GitHub sync verified: feature checkpoint ce17d5ecc67d6ce4c427ecb73832ee868f99b42a was pushed immediately to GitHub main. GitHub Pages workflow 45350106974 succeeded for that exact SHA, with matching main SHA verified. All todo items are completed; the final completion-record checkpoint is also immediately pushed and its own Pages deployment verified before delivery.
