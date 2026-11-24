@@ -237,3 +237,22 @@ Phase 21 verification: 326 Vitest tests across 19 files, TypeScript, and the Git
 Precision and teaching scope: all primary angle inputs are shared given points (4–26). Shared-edge plane angles use in-plane vectors perpendicular to the shared edge; arbitrary plane pairs use auxiliary vectors obtained by cross products, never Cartesian plane equations. Line-plane angles use an exact in-plane Gram projection and a cosine/dot-product calculation, with a guarded zero-projection perpendicular case. Equivalent plane equations are read-only and initially collapsed in enrichment. Actual named points and point-derived vectors retain their coordinates/lengths; only explicitly direction-labelled auxiliary arrows are rescaled for viewing.
 
 Phase 21 GitHub sync verified: feature checkpoint 06c0fcd90dd2969c1d29e603387cd7e469adf6ed was pushed immediately to GitHub main, with matching main SHA confirmed. GitHub Pages workflow 45217161218 completed successfully for that exact SHA. All todo items are now completed; this final completion-record checkpoint is likewise immediately pushed and its own Pages deployment checked before delivery.
+
+## Phase 22: Linear Inequalities & Linear Programming MC Simulator
+
+- [x] 新增二元閉不等式／線性規劃工具及合理的雙語導覽入口
+- [x] 精確求可行區域頂點與最大／最小值，正確區分無解、無界區域、無界目標和整條最優邊
+- [x] 支援已知極值反求加法常數及目標係數參數的完整範圍，不只驗證單一頂點
+- [x] 加入使用者提供的 2020／2023／2024 MC；2024 反光位置已以公開題解正文核對為 5x−2y+c，仍保留全部輸入可編輯
+- [x] 可行區域、目標直線與精確頂點圖，連接六步推導播放器與目標線／參數模擬
+- [x] 三難度練習變式，每級至少 50 個可生成題目，答錯加入一個後續題目
+- [x] 完整測試、TypeScript、Pages 建置與桌面／375px 手機驗收
+- [ ] checkpoint 後立即同步 GitHub，確認相同 SHA 的 Pages 部署
+
+Phase 22 verification: all 700 Vitest tests across 21 files, TypeScript, the GitHub Pages production build, and git diff --check passed. The exact LP engine uses BigInt rational arithmetic and Fourier–Motzkin elimination; feasibility and objective ranges do not depend on the existence of vertices. Covers strips, lines, points, whole plane, contradictory/duplicate boundaries, constant objectives, finite extrema on unbounded regions, recession generators, complete parameter intervals and isolated values, fraction/decimal/scientific parsing, and strict KaTeX. 2020 Q36 gives k=37 (C); 2023 Q37 gives beta>=4 (D), not the insufficient beta>=-10 condition; source-checked 2024 Q37 uses 5x-2y+c and gives c=25 (C).
+
+Actual desktop and 375px touch browser acceptance passed for all three presets and their true vertex tables, six linked graph stages, objective sweep/play/pause, beta=3/4/5 optimizer switches, unchanged full range during coefficient exploration, Greek variables/parameter/additive unknown (including an inactive-label regression), valid-edit camera retention, invalid-input stale result/graph clearing, automatic full-region fit on new questions, three practice levels, duplicate-safe wrong-answer follow-ups and queue consumption, no English CJK text, no KaTeX errors, no horizontal overflow, and bilingual persistence. Page errors were empty. Original generators produce at least 50 distinct cases per level and further cycles have distinct coordinates, so follow-up questions are not identical mathematical inputs.
+
+Teaching scope: only closed <=, >=, and = constraints are supported; strict inequalities are explicitly excluded in the UI. No implicit nonnegativity. Visualization levels/sliders are explicitly approximate, but graph clipping/intersections, solver vertices, extrema and parameter results are exact. Viewport clipping never adds mathematical constraints, vertices or optima. Existing point-first spatial angles and triangle construction tools are unchanged.
+
+2024 coefficient source check: Brightmind public suggested solutions, page 11, Q37: https://brightmind.com.hk/userfiles/Suggested%20Solution%20for%202024%20HKDSE%20Maths%20MC%20questions.pdf . The public PDF was downloaded and its text extracted; none of the three user-attached images was reopened with file tools.

@@ -19,6 +19,7 @@ import {
   ArrowUpRight,
   BookOpen,
   Compass,
+  ChartNoAxesCombined,
   Globe,
   Grid3X3,
   GraduationCap,
@@ -40,6 +41,9 @@ const KnowledgePage = lazy(() => import("./pages/KnowledgePage"));
 const EigenPage = lazy(() => import("./pages/EigenPage"));
 const MatrixPowerPage = lazy(() => import("./pages/MatrixPowerPage"));
 const TransformationPage = lazy(() => import("./pages/TransformationPage"));
+const LinearProgrammingPage = lazy(
+  () => import("./pages/LinearProgrammingPage")
+);
 
 type NavigationItem = { path: string; label: string; icon: LucideIcon };
 
@@ -96,6 +100,11 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
           path: "/system",
           label: lang === "zh" ? "聯立方程" : "Linear systems",
           icon: Sigma,
+        },
+        {
+          path: "/linear-programming",
+          label: lang === "zh" ? "不等式與線性規劃" : "Linear programming",
+          icon: ChartNoAxesCombined,
         },
         {
           path: "/eigen",
@@ -155,7 +164,10 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
     const [pathname, query] = path.split("?");
     if (pathname !== location) return false;
     if (query) return tab === new URLSearchParams(query).get("tab");
-    return pathname !== "/vector" || !["centers", "dse", "spatial"].includes(tab ?? "");
+    return (
+      pathname !== "/vector" ||
+      !["centers", "dse", "spatial"].includes(tab ?? "")
+    );
   }
 
   return (
@@ -230,18 +242,22 @@ function Layout() {
     "/": lang === "zh" ? "學習工作台" : "Learning workspace",
     "/matrix": t.navMatrix,
     "/system": t.navLinearSystem,
+    "/linear-programming":
+      lang === "zh" ? "不等式與線性規劃" : "Linear programming",
     "/vector":
       tab === "spatial"
-        ? lang === "zh" ? "直線與平面夾角" : "Lines & planes"
-        : tab === "centers"
         ? lang === "zh"
-          ? "三角形中心實驗"
-          : "Triangle centers"
-        : tab === "dse"
+          ? "直線與平面夾角"
+          : "Lines & planes"
+        : tab === "centers"
           ? lang === "zh"
-            ? "DSE 向量專區"
-            : "DSE vector practice"
-          : t.navVector,
+            ? "三角形中心實驗"
+            : "Triangle centers"
+          : tab === "dse"
+            ? lang === "zh"
+              ? "DSE 向量專區"
+              : "DSE vector practice"
+            : t.navVector,
     "/eigen": t.navEigen,
     "/matrix-power": lang === "zh" ? "矩陣 n 次方" : "Matrix powers",
     "/transformation": t.navTransformation,
@@ -360,6 +376,10 @@ function Layout() {
                 <Route path="/" component={HomePage} />
                 <Route path="/matrix" component={MatrixPage} />
                 <Route path="/system" component={LinearSystemPage} />
+                <Route
+                  path="/linear-programming"
+                  component={LinearProgrammingPage}
+                />
                 <Route path="/vector" component={VectorPage} />
                 <Route path="/knowledge">
                   {() => <KnowledgePage lang={lang} />}

@@ -5,6 +5,7 @@ import {
   ArrowUpRight,
   BookOpen,
   Compass,
+  ChartNoAxesCombined,
   GraduationCap,
   Grid3X3,
   Move,
@@ -43,6 +44,16 @@ const algebraTools: Tool[] = [
     descEn: "Follow elimination steps and examine different solution cases.",
     path: "/system",
     formula: "Ax = b",
+  },
+  {
+    icon: ChartNoAxesCombined,
+    titleZh: "不等式與線性規劃",
+    titleEn: "Linear programming",
+    descZh: "探索可行區域與極值，反求常數和參數範圍，逐步播放 MC 推導。",
+    descEn:
+      "Explore feasible regions and extrema, solve for constants and parameter ranges, and play MC derivations.",
+    path: "/linear-programming",
+    formula: "max / min (ax + by + c)",
   },
   {
     icon: Sparkles,
