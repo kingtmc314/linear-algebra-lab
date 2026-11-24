@@ -268,10 +268,12 @@ Phase 22 GitHub sync verified: feature checkpoint ce17d5ecc67d6ce4c427ecb73832ee
 - [x] 主工具與知識庫加入可選雙語概念區；45° 原創四點例子可展示 135° 補角
 - [x] 電腦與 375px 手機可旋轉、平移、縮放及展開 3D，動畫及翻轉時保持相機／取景
 - [x] 數學、KaTeX、英文文字、平行／垂直／符號及實際瀏覽器驗收；全套測試、TypeScript、Pages 建置
-- [ ] 保存 checkpoint 後立即同步 GitHub，核對同 SHA Pages 部署
+- [x] 保存 checkpoint 後立即同步 GitHub，核對同 SHA Pages 部署
 
 Phase 23 verification: all 744 Vitest tests across 22 files, TypeScript, the GitHub Pages production build, Prettier on changed source files, and git diff --check passed. Exact normal cross/dot calculations preserve the source's rational special-angle classification. The raw normal angle φ is 0–π, the invariant smaller angle θ is 0–π/2, and selected opening δ is independently θ or π−θ. Arbitrary normal flips are never treated as a justified outward convention or automatic interior-angle choice. Exact vector-displacement intersections do not introduce Cartesian plane equations; parallel/coincident pairs have a nonzero demonstration axis without a fake intersection edge.
 
 Actual desktop and 375px touch-browser acceptance passed: original four-point 45° demo and 135° raw-angle flips, all four sign combinations, independent supplementary opening, six synchronized trace stages, paired rotation slider/play/pause/reset, exact-answer invariance, Greek labels, live coordinate edits, invalid-input unmount and stale-result clearing, parallel/perpendicular presets, stable camera/ranges during controls, expanded-view camera retention and real touch gestures, knowledge embedding, line-plane/LP regressions, no English CJK, no KaTeX/page errors, no horizontal overflow and Traditional Chinese persistence. A hidden conservative envelope covers continuous rotation extrema; a compact external colour key avoids shrinking the mobile canvas with long auxiliary Plotly legends. Hidden/reduced-motion and geometry-change cancellation are included in the component lifecycle.
 
 Source: https://www.instagram.com/p/DfhH1rriuXq/ (chalet_dsemath), public caption successfully read. Full carousel images and its example coordinates were not available. The diagram is an original construction from the user's current points, not a reconstruction of inaccessible image coordinates. The existing four-or-more-point projection method, optional enrichment equations, triangle dragging/construction and LP simulator remain intact.
+
+Phase 23 GitHub sync verified: feature checkpoint 8b00d28b19eb7ce414aff984884ee0fe8713e710 was pushed immediately to GitHub main. GitHub Pages workflow 45502262473 completed successfully for that exact SHA, and main was verified to match. All todo items are completed; this final completion-record checkpoint is also immediately pushed and its own Pages deployment verified before delivery.
