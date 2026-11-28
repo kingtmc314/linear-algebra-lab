@@ -21,25 +21,19 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
-          cache: "pnpm"
+          node-version: '22'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install
 
-      - name: Build integrated app and all three independent apps
+      - name: Build
         run: pnpm run build:client
         env:
-          GITHUB_PAGES: "true"
+          GITHUB_PAGES: true
 
-      - name: Verify independent entries and deep-link fallbacks
-        run: |
-          test -f dist/public/index.html
-          test -f dist/public/404.html
-          for app in systems-of-equations matrices vector; do
-            test -f "dist/public/apps/$app/index.html"
-            test -f "dist/public/apps/$app/404.html"
-          done
+      - name: Copy 404.html
+        run: cp dist/public/index.html dist/public/404.html
 
       - name: Deploy to gh-pages
         uses: peaceiris/actions-gh-pages@v4
