@@ -28,6 +28,7 @@ import { Link } from "wouter";
 
 interface KnowledgePageProps {
   lang: "zh" | "en";
+  topicSlugs?: readonly string[];
 }
 
 const topicIcons: Record<string, React.ReactNode> = {
@@ -222,17 +223,23 @@ function TopicSection({
   );
 }
 
-export default function KnowledgePage({ lang }: KnowledgePageProps) {
+export default function KnowledgePage({
+  lang,
+  topicSlugs,
+}: KnowledgePageProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<string>("all");
-  const totalConcepts = phase20KnowledgeTopics.reduce(
+  const ownedTopics = phase20KnowledgeTopics.filter(
+    topic => !topicSlugs || topicSlugs.includes(topic.slug)
+  );
+  const totalConcepts = ownedTopics.reduce(
     (sum, topic) => sum + topic.items.length,
     0
   );
   const filteredTopics =
     activeFilter === "all"
-      ? phase20KnowledgeTopics
-      : phase20KnowledgeTopics.filter(topic => topic.slug === activeFilter);
+      ? ownedTopics
+      : ownedTopics.filter(topic => topic.slug === activeFilter);
   const matchingConcepts = filteredTopics.reduce(
     (sum, topic) =>
       sum +
@@ -294,7 +301,7 @@ export default function KnowledgePage({ lang }: KnowledgePageProps) {
         >
           {[
             { slug: "all", zh: "全部", en: "All" },
-            ...phase20KnowledgeTopics.map(topic => ({
+            ...ownedTopics.map(topic => ({
               slug: topic.slug,
               zh: topic.titleZh,
               en: topic.titleEn,

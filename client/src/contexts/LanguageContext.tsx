@@ -177,7 +177,8 @@ const zh: Translations = {
   enterScalarAnswer: "輸入數字答案",
   enterVectorAnswer: "輸入向量（用空格分隔），例：1 2 3",
   enterEigenvalues: "輸入特徵値（用空格分隔，由小到大排列），例：-2 3",
-  practiceHintMatrix: "提示：輸入矩陣答案，用空格分隔元素，分號分隔行。例：1 2; 3 4",
+  practiceHintMatrix:
+    "提示：輸入矩陣答案，用空格分隔元素，分號分隔行。例：1 2; 3 4",
   practiceHintVector: "提示：輸入向量分量，用空格分隔。例：1 -2 3",
   practiceHintEigen: "提示：輸入特徵値，由小到大排列，用空格分隔。例：-2 3",
   practiceCorrectMsg: "太棒了！答案正確。",
@@ -261,13 +262,18 @@ const en: Translations = {
   showAnswer: "Show Answer",
   yourAnswer: "Your Answer",
   practiceQuestion: "Practice Question",
-  enterMatrixAnswer: "Enter matrix (space-separated elements, semicolons for rows), e.g. 1 2; 3 4",
+  enterMatrixAnswer:
+    "Enter matrix (space-separated elements, semicolons for rows), e.g. 1 2; 3 4",
   enterScalarAnswer: "Enter numeric answer",
   enterVectorAnswer: "Enter vector components (space-separated), e.g. 1 2 3",
-  enterEigenvalues: "Enter eigenvalues (space-separated, sorted ascending), e.g. -2 3",
-  practiceHintMatrix: "Hint: Enter matrix answer with spaces between elements and semicolons between rows. E.g. 1 2; 3 4",
-  practiceHintVector: "Hint: Enter vector components separated by spaces. E.g. 1 -2 3",
-  practiceHintEigen: "Hint: Enter eigenvalues sorted from smallest to largest, separated by spaces. E.g. -2 3",
+  enterEigenvalues:
+    "Enter eigenvalues (space-separated, sorted ascending), e.g. -2 3",
+  practiceHintMatrix:
+    "Hint: Enter matrix answer with spaces between elements and semicolons between rows. E.g. 1 2; 3 4",
+  practiceHintVector:
+    "Hint: Enter vector components separated by spaces. E.g. 1 -2 3",
+  practiceHintEigen:
+    "Hint: Enter eigenvalues sorted from smallest to largest, separated by spaces. E.g. -2 3",
   practiceCorrectMsg: "Excellent! Your answer is correct.",
   practiceIncorrectMsg: "Incorrect answer. Please try again.",
   language: "Language",
@@ -289,15 +295,27 @@ const LanguageContext = createContext<LanguageContextType>({
   t: zh,
 });
 
-export function LanguageProvider({ children }: { children: React.ReactNode }) {
+export function LanguageProvider({
+  children,
+  storageKey = "linear-algebra-lab-language",
+}: {
+  children: React.ReactNode;
+  storageKey?: string;
+}) {
   const [lang, setLang] = useState<Lang>(() => {
-    try { return localStorage.getItem("linear-algebra-lab-language") === "en" ? "en" : "zh"; }
-    catch { return "zh"; }
+    try {
+      return localStorage.getItem(storageKey) === "en" ? "en" : "zh";
+    } catch {
+      return "zh";
+    }
   });
   useEffect(() => {
-    try { localStorage.setItem("linear-algebra-lab-language", lang); }
-    catch { /* Private/restricted storage must not prevent language switching. */ }
-  }, [lang]);
+    try {
+      localStorage.setItem(storageKey, lang);
+    } catch {
+      /* Private/restricted storage must not prevent language switching. */
+    }
+  }, [lang, storageKey]);
   return (
     <LanguageContext.Provider value={{ lang, setLang, t: translations[lang] }}>
       {children}

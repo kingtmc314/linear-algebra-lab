@@ -1,4 +1,5 @@
 import { useLanguage } from "@/contexts/LanguageContext";
+import { standaloneApps } from "@/lib/standaloneApps";
 import { Link } from "wouter";
 import {
   ArrowRight,
@@ -392,6 +393,52 @@ export default function HomePage() {
           </div>
         </div>
         <TriangleDiagram lang={lang} />
+      </section>
+
+      <section
+        className="home-toolkit"
+        aria-labelledby="standalone-apps-title"
+        data-testid="standalone-apps-links"
+      >
+        <div className="home-section-heading">
+          <div>
+            <p className="home-section-kicker">
+              {lang === "zh" ? "獨立單元" : "Independent apps"}
+            </p>
+            <h2 id="standalone-apps-title">
+              {lang === "zh"
+                ? "三個單元，三個專屬 App。"
+                : "Three subjects. Three focused apps."}
+            </h2>
+          </div>
+          <p>
+            {lang === "zh"
+              ? "各自導航與語言設定；原整合工具仍保留。"
+              : "Separate navigation and language settings. The integrated tools remain available."}
+          </p>
+        </div>
+        <div className="home-geometry-grid">
+          {Object.values(standaloneApps).map(app => (
+            <a
+              key={app.id}
+              href={`${import.meta.env.BASE_URL}apps/${app.id}/`}
+              className="home-tool-card"
+              data-testid={`standalone-link-${app.id}`}
+            >
+              <div className="home-tool-card-top">
+                <span className="home-tool-icon font-mono">{app.mark}</span>
+                <ArrowUpRight size={17} aria-hidden="true" />
+              </div>
+              <h3>{lang === "zh" ? app.titleZh : app.titleEn}</h3>
+              <p>
+                {lang === "zh"
+                  ? "開啟獨立 Web App"
+                  : "Open the independent web app"}
+              </p>
+              <span className="home-tool-formula">{app.formula}</span>
+            </a>
+          ))}
+        </div>
       </section>
 
       <section

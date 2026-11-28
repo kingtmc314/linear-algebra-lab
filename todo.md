@@ -277,3 +277,15 @@ Actual desktop and 375px touch-browser acceptance passed: original four-point 45
 Source: https://www.instagram.com/p/DfhH1rriuXq/ (chalet_dsemath), public caption successfully read. Full carousel images and its example coordinates were not available. The diagram is an original construction from the user's current points, not a reconstruction of inaccessible image coordinates. The existing four-or-more-point projection method, optional enrichment equations, triangle dragging/construction and LP simulator remain intact.
 
 Phase 23 GitHub sync verified: feature checkpoint 8b00d28b19eb7ce414aff984884ee0fe8713e710 was pushed immediately to GitHub main. GitHub Pages workflow 45502262473 completed successfully for that exact SHA, and main was verified to match. All todo items are completed; this final completion-record checkpoint is also immediately pushed and its own Pages deployment verified before delivery.
+
+## Phase 24: Independent Systems / Matrices / Vector Apps (one repository)
+
+- [x] 三個獨立 HTML／React 入口與專屬導航：Systems of Equations、Matrices、Vector
+- [x] 保留原整合網站、線性規劃及全部既有功能；各 App 只提供所屬模組
+- [x] 分別建置／執行、獨立部署 base、GitHub Pages 子目錄及深層連結／404 回復
+- [x] 每 App 的繁中／英文偏好獨立保存，知識庫按單元篩選
+- [x] 原首頁加入三個獨立 App 入口及開發／部署說明
+- [x] 全套測試、TypeScript、四個產物建置、桌面／375px 手機實際驗收
+- [ ] checkpoint 後立即同步 GitHub，確認同 SHA Pages 成功與三個網址可用
+
+Phase 24 acceptance: 798 tests / 26 files, application and Vite-config TypeScript, default and Pages builds, isolated APP_BASE=/ matrix deployment without integrated files, and actual desktop/375px touch checks all passed. Confirmed topic-only knowledge, same-origin isolated language persistence, query/hash deep reload, local cross-topic 404, exact system/matrix calculations and playback, vector six-stage normals/3D expansion/real vertex dragging/DSE, integrated homepage and LP, plus complete shared Tailwind utility styles. The normal managed preview dispatches compiled independent entries; no dependencies or lockfile changed. Fixed the existing over-escaped circumcentre Gram formula with a KaTeX rendering regression test.

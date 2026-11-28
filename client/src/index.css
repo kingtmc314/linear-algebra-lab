@@ -1,6 +1,11 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Standalone Vite roots live outside client/: scan shared pages explicitly. */
+@source "./";
+@source "../index.html";
+@source "../../apps";
+
 @custom-variant dark (&:is(.dark *));
 
 /* Paper, ink and geometric color. IBM headings and mathematical notation remain. */
@@ -1307,15 +1312,31 @@
 
 /* Equation changes are short; mathematical playback pacing lives in the player. */
 @media (prefers-reduced-motion: no-preference) {
-  .derivation-active { animation: derivation-enter 200ms cubic-bezier(0.23, 1, 0.32, 1) both; }
-  .derivation-player button:active:not(:disabled) { transform: scale(0.97); }
+  .derivation-active {
+    animation: derivation-enter 200ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  }
+  .derivation-player button:active:not(:disabled) {
+    transform: scale(0.97);
+  }
   @keyframes derivation-enter {
-    from { opacity: 0; transform: translateY(6px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }
-.derivation-player { min-width: 0; }
-.derivation-player select { font-family: var(--lab-mono); }
+.derivation-player {
+  min-width: 0;
+}
+.derivation-player select {
+  font-family: var(--lab-mono);
+}
 @media (min-width: 1280px) {
-  .home-geometry-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .home-geometry-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }

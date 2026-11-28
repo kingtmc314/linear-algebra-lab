@@ -32,14 +32,18 @@ function trimLogFile(logPath: string, maxSize: number) {
       keptBytes += lineBytes;
     }
     fs.writeFileSync(logPath, keptLines.join("\n"), "utf-8");
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 function writeToLogFile(source: LogSource, entries: unknown[]) {
   if (entries.length === 0) return;
   ensureLogDir();
   const logPath = path.join(LOG_DIR, `${source}.log`);
-  const lines = entries.map((entry) => `[${new Date().toISOString()}] ${JSON.stringify(entry)}`);
+  const lines = entries.map(
+    entry => `[${new Date().toISOString()}] ${JSON.stringify(entry)}`
+  );
   fs.appendFileSync(logPath, `${lines.join("\n")}\n`, "utf-8");
   trimLogFile(logPath, MAX_LOG_SIZE_BYTES);
 }
@@ -51,31 +55,46 @@ function vitePluginManusDebugCollector(): Plugin {
       if (process.env.NODE_ENV === "production") return html;
       return {
         html,
-        tags: [{ tag: "script", attrs: { src: "/__manus__/debug-collector.js", defer: true }, injectTo: "head" }],
+        tags: [
+          {
+            tag: "script",
+            attrs: { src: "/__manus__/debug-collector.js", defer: true },
+            injectTo: "head",
+          },
+        ],
       };
     },
     configureServer(server: ViteDevServer) {
       server.middlewares.use("/__manus__/logs", (req, res, next) => {
         if (req.method !== "POST") return next();
         const handlePayload = (payload: any) => {
-          if (payload.consoleLogs?.length > 0) writeToLogFile("browserConsole", payload.consoleLogs);
-          if (payload.networkRequests?.length > 0) writeToLogFile("networkRequests", payload.networkRequests);
-          if (payload.sessionEvents?.length > 0) writeToLogFile("sessionReplay", payload.sessionEvents);
+          if (payload.consoleLogs?.length > 0)
+            writeToLogFile("browserConsole", payload.consoleLogs);
+          if (payload.networkRequests?.length > 0)
+            writeToLogFile("networkRequests", payload.networkRequests);
+          if (payload.sessionEvents?.length > 0)
+            writeToLogFile("sessionReplay", payload.sessionEvents);
           res.writeHead(200, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ success: true }));
         };
         const reqBody = (req as { body?: unknown }).body;
         if (reqBody && typeof reqBody === "object") {
-          try { handlePayload(reqBody); } catch (e) {
+          try {
+            handlePayload(reqBody);
+          } catch (e) {
             res.writeHead(400, { "Content-Type": "application/json" });
             res.end(JSON.stringify({ success: false, error: String(e) }));
           }
           return;
         }
         let body = "";
-        req.on("data", (chunk) => { body += chunk.toString(); });
+        req.on("data", chunk => {
+          body += chunk.toString();
+        });
         req.on("end", () => {
-          try { handlePayload(JSON.parse(body)); } catch (e) {
+          try {
+            handlePayload(JSON.parse(body));
+          } catch (e) {
             res.writeHead(400, { "Content-Type": "application/json" });
             res.end(JSON.stringify({ success: false, error: String(e) }));
           }
@@ -85,13 +104,66 @@ function vitePluginManusDebugCollector(): Plugin {
   };
 }
 
-const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector()];
+/** The integrated dev preview serves independently compiled app roots/assets. */
+function standalonePreviewPlugin(): Plugin {
+  return {
+    name: "standalone-compiled-preview",
+    configureServer(server) {
+      server.middlewares.use(async (req, res, next) => {
+        const pathname = new URL(req.url ?? "/", "http://preview.invalid")
+          .pathname;
+        const match = pathname.match(
+          /^\/apps\/(systems-of-equations|matrices|vector)(?:\/|$)/
+        );
+        if (!match) return next();
+        const root = path.join(PROJECT_ROOT, "dist/public");
+        let file = path.resolve(root, `.${pathname}`);
+        if (!file.startsWith(root + path.sep)) return next();
+        try {
+          const stat = await fs.promises.stat(file).catch(() => null);
+          if (!stat || stat.isDirectory())
+            file = path.join(root, "apps", match[1], "index.html");
+          const content = await fs.promises.readFile(file);
+          const types: Record<string, string> = {
+            ".html": "text/html; charset=utf-8",
+            ".js": "text/javascript; charset=utf-8",
+            ".css": "text/css; charset=utf-8",
+            ".woff2": "font/woff2",
+            ".woff": "font/woff",
+            ".ttf": "font/ttf",
+            ".svg": "image/svg+xml",
+            ".json": "application/json",
+          };
+          res.writeHead(200, {
+            "Content-Type":
+              types[path.extname(file)] ?? "application/octet-stream",
+          });
+          res.end(content);
+        } catch {
+          res.writeHead(503, { "Content-Type": "text/plain; charset=utf-8" });
+          res.end(
+            "Build the independent apps first: pnpm build:client / 請先建置獨立 App。"
+          );
+        }
+      });
+    },
+  };
+}
+
+const plugins = [
+  react(),
+  tailwindcss(),
+  jsxLocPlugin(),
+  vitePluginManusRuntime(),
+  vitePluginManusDebugCollector(),
+  standalonePreviewPlugin(),
+];
 
 // GitHub Pages base path — set to repo name for gh-pages deployment
-const isGhPages = process.env.GITHUB_PAGES === 'true';
+const isGhPages = process.env.GITHUB_PAGES === "true";
 
 export default defineConfig({
-  base: isGhPages ? '/linear-algebra-lab/' : '/',
+  base: isGhPages ? "/linear-algebra-lab/" : "/",
   plugins,
   resolve: {
     alias: {

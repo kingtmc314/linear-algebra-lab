@@ -16,6 +16,7 @@ import StepDisplay from "@/components/StepDisplay";
 import TriangleCentersPlot from "@/components/TriangleCentersPlot";
 import { computeTriangleCenters, type Vec3 } from "@/lib/vectorMath";
 import { triangleExact } from "@/lib/triangleExact";
+import { circumcenterGramLatex } from "@/lib/triangleCenterFormulas";
 import {
   ALL_LAYERS,
   CONSTRUCTION_STEPS,
@@ -728,7 +729,7 @@ export default function TriangleCentersWorkspace() {
                     : "For a triangle in space, the circumcenter lies in its plane. Let u = B − A, v = C − A and solve the Gram system."}
                 </p>
                 <div className="overflow-x-auto mt-2">
-                  <KatexRenderer latex="2\\begin{bmatrix}u\\cdot u&u\\cdot v\\\\u\\cdot v&v\\cdot v\\end{bmatrix}\\begin{bmatrix}s\\\\t\\end{bmatrix}=\\begin{bmatrix}u\\cdot u\\\\v\\cdot v\\end{bmatrix},\\quad O=A+su+tv" />
+                  <KatexRenderer latex={circumcenterGramLatex} />
                 </div>
               </div>
             </div>
