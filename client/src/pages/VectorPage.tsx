@@ -1,5 +1,5 @@
 // VectorPage — 2D and 3D Vector Calculator with Interactive Plotly Visualization
-// Academic Precision Design: split input/result, interactive Plotly charts
+// Compact workspace: parameters → exact result → computed diagram and derivation
 import { useState, useCallback } from "react";
 import { useLocation, useSearch } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -121,9 +121,9 @@ function GeomHint({
   };
   const h = hints[op];
   return (
-    <div className="flex items-start gap-2 p-2.5 rounded-md bg-secondary/40 border border-border">
-      <BarChart2 className="w-3.5 h-3.5 mt-0.5 text-primary flex-shrink-0" />
-      <p className="text-xs text-muted-foreground leading-relaxed">
+    <div className="flex items-start gap-2.5 rounded-xl bg-secondary/50 p-3 text-secondary-foreground">
+      <BarChart2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+      <p className="text-xs leading-relaxed text-muted-foreground">
         {lang === "zh" ? h.zh : h.en}
       </p>
     </div>
@@ -151,8 +151,19 @@ export default function VectorPage() {
   const [vecB, setVecB] = useState([3, 1]);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
-  const [derivation, setDerivation] = useState<{ index: number; mode: DerivationMode }>({ index: 0, mode: "all" });
-  const onDerivationStep = useCallback((index: number, mode: DerivationMode) => setDerivation(previous => previous.index === index && previous.mode === mode ? previous : { index, mode }), []);
+  const [derivation, setDerivation] = useState<{
+    index: number;
+    mode: DerivationMode;
+  }>({ index: 0, mode: "all" });
+  const onDerivationStep = useCallback(
+    (index: number, mode: DerivationMode) =>
+      setDerivation(previous =>
+        previous.index === index && previous.mode === mode
+          ? previous
+          : { index, mode }
+      ),
+    []
+  );
 
   function switchDim(d: Dim) {
     setDim(d);
@@ -184,8 +195,16 @@ export default function VectorPage() {
     setResult(null);
     setDerivation({ index: 0, mode: "all" });
     try {
-      if ([...vecA, ...vecB].some(value => !Number.isFinite(value) || Math.abs(value) > 1_000_000)) {
-        setError(lang === "zh" ? "請輸入有限數值，每個分量的絕對值不可超過 1,000,000。" : "Enter finite values with each component between −1,000,000 and 1,000,000.");
+      if (
+        [...vecA, ...vecB].some(
+          value => !Number.isFinite(value) || Math.abs(value) > 1_000_000
+        )
+      ) {
+        setError(
+          lang === "zh"
+            ? "請輸入有限數值，每個分量的絕對值不可超過 1,000,000。"
+            : "Enter finite values with each component between −1,000,000 and 1,000,000."
+        );
         return;
       }
       let res: any;
@@ -226,7 +245,11 @@ export default function VectorPage() {
       } else {
         const exact = exactVectorDerivation(op, vecA, vecB);
         res.exactLatex = exact.latex;
-        res.steps = exact.steps.map((step, index) => index === exact.steps.length - 1 ? { ...step, value: res.vector ?? res.scalar ?? res.projVector } : step);
+        res.steps = exact.steps.map((step, index) =>
+          index === exact.steps.length - 1
+            ? { ...step, value: res.vector ?? res.scalar ?? res.projVector }
+            : step
+        );
         setResult(res);
       }
     } catch {
@@ -255,8 +278,19 @@ export default function VectorPage() {
   const availableOps = dim === "2d" ? OPS_2D : OPS_3D;
   const needsB = NEEDS_B.includes(op);
   const showVis = VIS_OPS.includes(op);
-  const resultStep = result?.steps?.findIndex((step: { value?: unknown }) => step.value !== undefined) ?? -1;
-  const constructionStage = derivation.mode === "all" ? 2 : derivation.index >= (resultStep >= 0 ? resultStep : (result?.steps?.length ?? 1) - 1) ? 2 : derivation.index >= 1 ? 1 : 0;
+  const resultStep =
+    result?.steps?.findIndex(
+      (step: { value?: unknown }) => step.value !== undefined
+    ) ?? -1;
+  const constructionStage =
+    derivation.mode === "all"
+      ? 2
+      : derivation.index >=
+          (resultStep >= 0 ? resultStep : (result?.steps?.length ?? 1) - 1)
+        ? 2
+        : derivation.index >= 1
+          ? 1
+          : 0;
   const revealResult = constructionStage === 2;
 
   // Build visualization vector arrays
@@ -309,166 +343,265 @@ export default function VectorPage() {
 
   // Projection-specific visualization data
   const projVec2D =
-    isProjection && revealResult && result?.projVector ? result.projVector : undefined;
+    isProjection && revealResult && result?.projVector
+      ? result.projVector
+      : undefined;
   const perpVec2D =
-    isProjection && revealResult && result?.perpVector ? result.perpVector : undefined;
+    isProjection && revealResult && result?.perpVector
+      ? result.perpVector
+      : undefined;
   const projVec3D =
-    isProjection && revealResult && result?.projVector ? result.projVector : undefined;
+    isProjection && revealResult && result?.projVector
+      ? result.projVector
+      : undefined;
   const perpVec3D =
-    isProjection && revealResult && result?.perpVector ? result.perpVector : undefined;
+    isProjection && revealResult && result?.perpVector
+      ? result.perpVector
+      : undefined;
 
   const labels = dim === "2d" ? ["x", "y"] : ["x", "y", "z"];
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1
-          className="text-2xl font-bold text-foreground"
-          style={{ fontFamily: "'IBM Plex Serif', serif" }}
-        >
-          {activeTab === "spatial"
-            ? lang === "zh" ? "空間幾何 · 直線與平面夾角" : "Spatial geometry · lines & planes"
-            : activeTab === "centers"
-            ? lang === "zh"
-              ? "幾何探索 · 三角形四心"
-              : "Geometry lab · triangle centres"
-            : activeTab === "dse"
+    <div className="vector-workspace min-w-0 space-y-5">
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 space-y-1.5">
+          <p className="workspace-label text-xs font-semibold uppercase tracking-widest text-primary">
+            {lang === "zh" ? "向量 · 工作區" : "Vectors · workspace"}
+          </p>
+          <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+            {activeTab === "spatial"
               ? lang === "zh"
-                ? "DSE-style 向量練習"
-                : "DSE-style vector practice"
-              : t.vectorCalc}
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {activeTab === "spatial"
-            ? lang === "zh" ? "由四點或以上的已知坐標，以平面內向量、投影與內積求夾角，並播放同步建構圖。" : "Start from four or more given points, then use in-plane vectors, projections and dot products with animated geometry."
-            : activeTab === "centers"
-            ? lang === "zh"
-              ? "拖曳頂點，播放建構，理解 G、I、O、H。"
-              : "Drag vertices, play constructions and explore G, I, O, H."
-            : activeTab === "dse"
+                ? "直線與平面夾角"
+                : "Lines & planes"
+              : activeTab === "centers"
+                ? lang === "zh"
+                  ? "三角形四心"
+                  : "Triangle centres"
+                : activeTab === "dse"
+                  ? lang === "zh"
+                    ? "DSE 向量練習"
+                    : "DSE vector practice"
+                  : activeTab === "practice"
+                    ? lang === "zh"
+                      ? "向量練習"
+                      : "Vector practice"
+                    : t.vectorCalc}
+          </h1>
+          <p className="max-w-3xl text-sm leading-relaxed text-muted-foreground">
+            {activeTab === "spatial"
               ? lang === "zh"
-                ? "原創題組 · 2D／3D 向量與四心 · 精確答案及詳解"
-                : "Original questions · 2D/3D vectors and triangle centres · exact answers & solutions"
-              : `${dim === "2d" ? t.vector2D : t.vector3D} · ${opLabels[op]}`}
-        </p>
-      </div>
+                ? "由四點或以上的已知坐標，以平面內向量、投影與內積求夾角，並播放同步建構圖。"
+                : "Start from four or more given points, then use in-plane vectors, projections and dot products with animated geometry."
+              : activeTab === "centers"
+                ? lang === "zh"
+                  ? "拖曳頂點，播放建構，理解 G、I、O、H。"
+                  : "Drag vertices, play constructions and explore G, I, O, H."
+                : activeTab === "dse"
+                  ? lang === "zh"
+                    ? "原創題組 · 2D／3D 向量與四心 · 精確答案及詳解"
+                    : "Original questions · 2D/3D vectors and triangle centres · exact answers & solutions"
+                  : activeTab === "practice"
+                    ? lang === "zh"
+                      ? "隨機題目，逐步檢查答案與解法。"
+                      : "Random questions with answers and step-by-step solutions."
+                    : lang === "zh"
+                      ? "選擇運算、輸入分量，再探索精確答案與幾何意義。"
+                      : "Choose an operation, enter components and explore exact answers with geometry."}
+          </p>
+        </div>
+        {activeTab === "calc" && (
+          <span className="rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-card-foreground">
+            {dim === "2d" ? "2D" : "3D"} · {opLabels[op]}
+          </span>
+        )}
+      </header>
 
       <Tabs
         value={activeTab}
         onValueChange={value =>
           navigate(`/vector?tab=${value}`, { replace: true })
         }
+        className="min-w-0"
       >
-        <TabsList>
-          <TabsTrigger value="calc">{t.calcMode}</TabsTrigger>
-          <TabsTrigger value="centers">
-            <Triangle className="w-3 h-3 mr-1" />
-            {lang === "zh" ? "三角形四心" : "Triangle Centers"}
-          </TabsTrigger>
-          <TabsTrigger value="spatial">{lang === "zh" ? "直線／平面夾角" : "Lines & planes"}</TabsTrigger>
-          <TabsTrigger value="practice">{t.practiceMode}</TabsTrigger>
-          <TabsTrigger value="dse">
-            {lang === "zh" ? "DSE Style 題組" : "DSE-Style Practice"}
-          </TabsTrigger>
-        </TabsList>
+        <nav
+          aria-label={
+            lang === "zh" ? "向量工作區分頁" : "Vector workspace tabs"
+          }
+          className="vector-workspace-nav -mx-1 overflow-x-auto px-1 pb-1"
+        >
+          <TabsList className="h-auto w-max min-w-full justify-start gap-1 rounded-xl bg-secondary/70 p-1.5 text-secondary-foreground sm:min-w-0">
+            <TabsTrigger
+              value="calc"
+              aria-label={t.calcMode}
+              className="h-9 shrink-0 rounded-lg px-4 text-sm"
+            >
+              {lang === "zh" ? "計算" : "Calculate"}
+            </TabsTrigger>
+            <TabsTrigger
+              value="centers"
+              aria-label={lang === "zh" ? "三角形四心" : "Triangle Centers"}
+              className="h-9 shrink-0 rounded-lg px-4 text-sm"
+            >
+              <Triangle className="mr-1.5 h-3.5 w-3.5" />
+              {lang === "zh" ? "四心" : "Centres"}
+            </TabsTrigger>
+            <TabsTrigger
+              value="spatial"
+              aria-label={lang === "zh" ? "直線／平面夾角" : "Lines & planes"}
+              className="h-9 shrink-0 rounded-lg px-4 text-sm"
+            >
+              {lang === "zh" ? "空間" : "Spatial"}
+            </TabsTrigger>
+            <TabsTrigger
+              value="practice"
+              aria-label={t.practiceMode}
+              className="h-9 shrink-0 rounded-lg px-4 text-sm"
+            >
+              {lang === "zh" ? "練習" : "Practice"}
+            </TabsTrigger>
+            <TabsTrigger
+              value="dse"
+              aria-label={
+                lang === "zh" ? "DSE Style 題組" : "DSE-Style Practice"
+              }
+              className="h-9 shrink-0 rounded-lg px-4 text-sm"
+            >
+              DSE
+            </TabsTrigger>
+          </TabsList>
+        </nav>
 
-        {/* ── DSE-style Practice Tab ── */}
-        <TabsContent value="dse" className="mt-4">
+        <TabsContent
+          value="dse"
+          className="workspace-section vector-dse-workspace mt-5 min-w-0"
+        >
           <DseVectorPracticePanel />
         </TabsContent>
-
-        {/* ── Practice Tab ── */}
-        <TabsContent value="practice" className="mt-4">
+        <TabsContent
+          value="practice"
+          className="workspace-section vector-practice-workspace mt-5 min-w-0"
+        >
           <PracticePanel
             generateQuestion={genQuestion}
             moduleLabel={lang === "zh" ? "向量練習" : "Vector Practice"}
           />
         </TabsContent>
-
-        {/* Diagram-first, editable four-centre workspace */}
-        <TabsContent value="centers" className="mt-5">
+        <TabsContent
+          value="centers"
+          className="workspace-section vector-centers-workspace mt-5 min-w-0"
+        >
           <TriangleCentersWorkspace />
         </TabsContent>
-        <TabsContent value="spatial" className="mt-5"><SpatialAnglesPanel /></TabsContent>
+        <TabsContent
+          value="spatial"
+          className="workspace-section vector-spatial-workspace mt-5 min-w-0"
+        >
+          <SpatialAnglesPanel />
+        </TabsContent>
 
-        {/* ── Calculator Tab ── */}
-        <TabsContent value="calc" className="mt-4 space-y-4">
-          {/* Dimension toggle */}
-          <div className="flex gap-2">
-            {(["2d", "3d"] as Dim[]).map(d => (
-              <button
-                key={d}
-                onClick={() => switchDim(d)}
-                className={`px-4 py-2 text-sm font-mono font-semibold rounded border transition-all duration-150
-                  ${
-                    dim === d
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-card text-foreground border-border hover:border-primary/50"
-                  }`}
+        <TabsContent
+          value="calc"
+          className="vector-calculator mt-5 min-w-0 space-y-5"
+        >
+          {/* Compact tool selection; the essential meaning stays visible. */}
+          <section
+            className="workspace-section vector-tools space-y-4 rounded-2xl border border-border bg-card p-4 text-card-foreground sm:p-5"
+            aria-label={
+              lang === "zh" ? "選擇向量運算" : "Choose a vector operation"
+            }
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="workspace-label text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  {lang === "zh" ? "01 / 運算" : "01 / Operation"}
+                </span>
+                <h2 className="text-sm font-semibold">{opLabels[op]}</h2>
+              </div>
+              <div
+                className="flex items-center gap-1 rounded-lg bg-secondary p-1 text-secondary-foreground"
+                role="group"
+                aria-label={lang === "zh" ? "向量維度" : "Vector dimensions"}
               >
-                {d === "2d" ? t.vector2D : t.vector3D}
-              </button>
-            ))}
-          </div>
+                {(["2d", "3d"] as Dim[]).map(d => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => switchDim(d)}
+                    aria-pressed={dim === d}
+                    aria-label={d === "2d" ? t.vector2D : t.vector3D}
+                    className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${dim === d ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    {d === "2d" ? "2D" : "3D"}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div
+              className="flex flex-wrap gap-2"
+              role="group"
+              aria-label={lang === "zh" ? "向量運算" : "Vector operations"}
+            >
+              {availableOps.map(o => (
+                <button
+                  key={o}
+                  type="button"
+                  onClick={() => {
+                    setOp(o);
+                    setResult(null);
+                    setError(null);
+                  }}
+                  aria-pressed={op === o}
+                  className={`rounded-lg border px-3 py-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${op === o ? "border-primary bg-primary text-primary-foreground shadow-sm" : "border-border bg-background text-foreground hover:border-primary/40 hover:bg-secondary"}`}
+                >
+                  {opLabels[o]}
+                </button>
+              ))}
+            </div>
+            <GeomHint op={op} dim={dim} lang={lang} />
+          </section>
 
-          {/* Operation selector */}
-          <div className="flex flex-wrap gap-2">
-            {availableOps.map(o => (
-              <button
-                key={o}
-                onClick={() => {
-                  setOp(o);
-                  setResult(null);
-                  setError(null);
-                }}
-                className={`px-3 py-1.5 text-xs font-mono font-medium rounded border transition-all duration-150
-                  ${
-                    op === o
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-card text-foreground border-border hover:border-primary/50 hover:bg-secondary"
-                  }`}
+          <div className="grid min-w-0 grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+            {/* Mobile reading order: inputs, exact result, diagram, derivation. */}
+            <div className="min-w-0 space-y-5">
+              <section
+                className="workspace-section vector-parameters space-y-4 rounded-2xl border border-border bg-card p-4 text-card-foreground sm:p-5"
+                aria-labelledby="vector-input-title"
               >
-                {opLabels[o]}
-              </button>
-            ))}
-          </div>
-
-          {/* Geometric hint */}
-          <GeomHint op={op} dim={dim} lang={lang} />
-
-          {/* Input + Visualization */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Vector inputs */}
-            <div className="space-y-4">
-              {/* Vector A */}
-              <div className="p-4 rounded-lg border border-border bg-card space-y-3">
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-blue-600 flex-shrink-0" />
-                  <h3 className="text-sm font-semibold font-mono text-foreground">
-                    {t.vectorA}
-                  </h3>
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <h2 id="vector-input-title" className="text-sm font-semibold">
+                    <span className="workspace-label mr-2 text-xs font-medium text-muted-foreground">
+                      02 /
+                    </span>
+                    {lang === "zh" ? "輸入分量" : "Components"}
+                  </h2>
+                  <span className="text-xs text-muted-foreground">
+                    {needsB
+                      ? lang === "zh"
+                        ? "兩個向量"
+                        : "Two vectors"
+                      : lang === "zh"
+                        ? "只需向量 a"
+                        : "Vector a only"}
+                  </span>
                 </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <div className="flex items-center gap-1">
-                    <svg
-                      width="10"
-                      height={vecA.length * 42 + 8}
-                      viewBox={`0 0 10 ${vecA.length * 42 + 8}`}
-                      fill="none"
+
+                <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                  <div
+                    className={`min-w-0 space-y-3 rounded-xl border border-border bg-background p-3 text-foreground ${!needsB ? "sm:col-span-2 lg:col-span-1 xl:col-span-2" : ""}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full bg-blue-600" />
+                      <h3 className="text-sm font-semibold">{t.vectorA}</h3>
+                    </div>
+                    <div
+                      className="grid grid-cols-2 gap-2"
+                      style={{
+                        gridTemplateColumns: `repeat(${labels.length}, minmax(0, 1fr))`,
+                      }}
                     >
-                      <path
-                        d={`M8 4 L3 4 L3 ${vecA.length * 42 + 4} L8 ${vecA.length * 42 + 4}`}
-                        stroke="#2563EB"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                    <div className="flex flex-col gap-1">
                       {vecA.map((v, i) => (
-                        <div key={i} className="flex items-center gap-2">
-                          <span className="text-xs font-mono text-muted-foreground w-4">
+                        <label key={i} className="min-w-0 space-y-1.5">
+                          <span className="block text-xs font-mono text-muted-foreground">
                             {labels[i]}
                           </span>
                           <input
@@ -476,63 +609,34 @@ export default function VectorPage() {
                             value={v === 0 ? "" : v}
                             placeholder="0"
                             onChange={e => handleVecAChange(i, e.target.value)}
-                            className="matrix-cell border-blue-300"
+                            aria-label={`${t.vectorA} ${labels[i]}`}
+                            className="matrix-cell !w-full min-w-0 rounded-lg border-blue-300 !text-sm focus-visible:ring-2 focus-visible:ring-ring"
                           />
-                        </div>
+                        </label>
                       ))}
                     </div>
-                    <svg
-                      width="10"
-                      height={vecA.length * 42 + 8}
-                      viewBox={`0 0 10 ${vecA.length * 42 + 8}`}
-                      fill="none"
-                    >
-                      <path
-                        d={`M2 4 L7 4 L7 ${vecA.length * 42 + 4} L2 ${vecA.length * 42 + 4}`}
-                        stroke="#2563EB"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
+                    <div className="overflow-x-auto border-t border-border pt-2 text-xs text-muted-foreground">
+                      <KatexRenderer
+                        latex={`\\mathbf{a} = ${vecToLatex(vecA)}`}
                       />
-                    </svg>
+                    </div>
                   </div>
-                  <div className="text-xs text-muted-foreground font-mono">
-                    <KatexRenderer
-                      latex={`\\mathbf{a} = ${vecToLatex(vecA)}`}
-                    />
-                  </div>
-                </div>
-              </div>
 
-              {/* Vector B */}
-              {needsB && (
-                <div className="p-4 rounded-lg border border-border bg-card space-y-3">
-                  <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-red-600 flex-shrink-0" />
-                    <h3 className="text-sm font-semibold font-mono text-foreground">
-                      {t.vectorB}
-                    </h3>
-                  </div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <div className="flex items-center gap-1">
-                      <svg
-                        width="10"
-                        height={vecB.length * 42 + 8}
-                        viewBox={`0 0 10 ${vecB.length * 42 + 8}`}
-                        fill="none"
+                  {needsB && (
+                    <div className="min-w-0 space-y-3 rounded-xl border border-border bg-background p-3 text-foreground">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full bg-red-600" />
+                        <h3 className="text-sm font-semibold">{t.vectorB}</h3>
+                      </div>
+                      <div
+                        className="grid grid-cols-2 gap-2"
+                        style={{
+                          gridTemplateColumns: `repeat(${labels.length}, minmax(0, 1fr))`,
+                        }}
                       >
-                        <path
-                          d={`M8 4 L3 4 L3 ${vecB.length * 42 + 4} L8 ${vecB.length * 42 + 4}`}
-                          stroke="#DC2626"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                      <div className="flex flex-col gap-1">
                         {vecB.map((v, i) => (
-                          <div key={i} className="flex items-center gap-2">
-                            <span className="text-xs font-mono text-muted-foreground w-4">
+                          <label key={i} className="min-w-0 space-y-1.5">
+                            <span className="block text-xs font-mono text-muted-foreground">
                               {labels[i]}
                             </span>
                             <input
@@ -542,159 +646,192 @@ export default function VectorPage() {
                               onChange={e =>
                                 handleVecBChange(i, e.target.value)
                               }
-                              className="matrix-cell border-red-300"
+                              aria-label={`${t.vectorB} ${labels[i]}`}
+                              className="matrix-cell !w-full min-w-0 rounded-lg border-red-300 !text-sm focus-visible:ring-2 focus-visible:ring-ring"
                             />
-                          </div>
+                          </label>
                         ))}
                       </div>
-                      <svg
-                        width="10"
-                        height={vecB.length * 42 + 8}
-                        viewBox={`0 0 10 ${vecB.length * 42 + 8}`}
-                        fill="none"
-                      >
-                        <path
-                          d={`M2 4 L7 4 L7 ${vecB.length * 42 + 4} L2 ${vecB.length * 42 + 4}`}
-                          stroke="#DC2626"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
+                      <div className="overflow-x-auto border-t border-border pt-2 text-xs text-muted-foreground">
+                        <KatexRenderer
+                          latex={`\\mathbf{b} = ${vecToLatex(vecB)}`}
                         />
-                      </svg>
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground font-mono">
-                      <KatexRenderer
-                        latex={`\\mathbf{b} = ${vecToLatex(vecB)}`}
-                      />
-                    </div>
-                  </div>
+                  )}
                 </div>
-              )}
 
-              {/* Actions */}
-              <div className="flex gap-3">
-                <Button onClick={handleCalculate} className="font-mono">
-                  {t.calculate}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={handleReset}
-                  className="font-mono"
-                >
-                  {t.reset}
-                </Button>
-              </div>
+                <div className="flex gap-2 border-t border-border pt-4">
+                  <Button
+                    onClick={handleCalculate}
+                    className="flex-1 rounded-lg font-semibold"
+                  >
+                    {t.calculate}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleReset}
+                    className="rounded-lg bg-background text-foreground"
+                  >
+                    {t.reset}
+                  </Button>
+                </div>
+                {error && (
+                  <div
+                    role="alert"
+                    className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-destructive"
+                  >
+                    <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                    <p className="text-sm leading-relaxed">{error}</p>
+                  </div>
+                )}
+              </section>
+
+              <section
+                className="workspace-section vector-result min-w-0 rounded-2xl border border-border bg-card p-4 text-card-foreground sm:p-5"
+                aria-labelledby="vector-result-title"
+                aria-live="polite"
+              >
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <h2
+                    id="vector-result-title"
+                    className="text-sm font-semibold"
+                  >
+                    <span className="workspace-label mr-2 text-xs font-medium text-muted-foreground">
+                      03 /
+                    </span>
+                    {t.result}
+                  </h2>
+                  {result && !error && (
+                    <span className="flex items-center gap-1.5 text-xs font-medium text-primary">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      {lang === "zh" ? "精確答案" : "Exact answer"}
+                    </span>
+                  )}
+                </div>
+                {result && !error ? (
+                  <div className="result-row overflow-x-auto rounded-xl bg-secondary/50 px-3 py-2 text-secondary-foreground">
+                    <KatexRenderer latex={result.exactLatex} displayMode />
+                  </div>
+                ) : (
+                  <p className="rounded-xl bg-secondary/40 p-3 text-sm leading-relaxed text-muted-foreground">
+                    {lang === "zh"
+                      ? "輸入分量後按「計算」，精確答案會顯示在這裡。圖解會隨輸入即時更新。"
+                      : "Enter components and select Calculate to see the exact answer here. The diagram updates as you edit."}
+                  </p>
+                )}
+              </section>
             </div>
 
-            {/* Interactive Visualization */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold font-mono uppercase tracking-wide text-muted-foreground">
-                  {t.visualization}
-                  <span className="ml-2 text-xs font-normal normal-case text-primary/70">
-                    {lang === "zh"
-                      ? "（可縮放 · 可拖曳）"
-                      : "(zoomable · draggable)"}
+            <div className="min-w-0 space-y-5">
+              <section
+                className="workspace-section vector-diagram min-w-0 space-y-4 rounded-2xl border border-border bg-card p-4 text-card-foreground sm:p-5"
+                aria-labelledby="vector-diagram-title"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h2
+                    id="vector-diagram-title"
+                    className="text-sm font-semibold"
+                  >
+                    <span className="workspace-label mr-2 text-xs font-medium text-muted-foreground">
+                      04 /
+                    </span>
+                    {t.visualization}
+                  </h2>
+                  <span className="rounded-full bg-secondary px-2.5 py-1 text-xs text-secondary-foreground">
+                    {lang === "zh" ? "可縮放 · 可拖曳" : "Zoom · drag"}
                   </span>
-                </h3>
-              </div>
-
-              {showVis ? (
-                dim === "2d" ? (
-                  <VectorPlot2D
-                    vectors={visVectors2D}
-                    op={op}
-                    lang={lang}
-                    projVector={projVec2D}
-                    perpVector={perpVec2D}
-                    constructionStage={constructionStage}
-                  />
-                ) : (
-                  <VectorPlot3D
-                    vectors={visVectors3D}
-                    op={op}
-                    lang={lang}
-                    projVector={projVec3D}
-                    perpVector={perpVec3D}
-                    constructionStage={constructionStage}
-                  />
-                )
-              ) : (
-                <div className="flex items-center justify-center h-40 rounded-lg border border-border bg-secondary/20 text-sm text-muted-foreground font-mono">
-                  {lang === "zh"
-                    ? "此運算無幾何視覺化"
-                    : "No geometric visualization for this operation"}
                 </div>
-              )}
 
-              {/* Legend */}
-              <div className="flex flex-wrap gap-3 text-xs font-mono">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-4 h-0.5 bg-blue-600 inline-block rounded" />
-                  <span className="text-muted-foreground">{t.vectorA}</span>
-                </span>
-                {needsB && (
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-4 h-0.5 bg-red-600 inline-block rounded" />
-                    <span className="text-muted-foreground">{t.vectorB}</span>
-                  </span>
+                {showVis ? (
+                  dim === "2d" ? (
+                    <VectorPlot2D
+                      vectors={visVectors2D}
+                      op={op}
+                      lang={lang}
+                      projVector={projVec2D}
+                      perpVector={perpVec2D}
+                      constructionStage={constructionStage}
+                    />
+                  ) : (
+                    <VectorPlot3D
+                      vectors={visVectors3D}
+                      op={op}
+                      lang={lang}
+                      projVector={projVec3D}
+                      perpVector={perpVec3D}
+                      constructionStage={constructionStage}
+                    />
+                  )
+                ) : (
+                  <div className="flex h-40 items-center justify-center rounded-xl bg-secondary/40 text-sm text-muted-foreground">
+                    {lang === "zh"
+                      ? "此運算無幾何視覺化"
+                      : "No geometric visualization for this operation"}
+                  </div>
                 )}
-                {result?.vector && (
+
+                <div className="flex flex-wrap gap-x-4 gap-y-2 border-t border-border pt-3 text-xs">
                   <span className="flex items-center gap-1.5">
-                    <span className="w-4 h-0.5 bg-green-600 inline-block rounded" />
-                    <span className="text-muted-foreground">{t.result}</span>
+                    <span className="inline-block h-0.5 w-4 rounded bg-blue-600" />
+                    <span className="text-muted-foreground">{t.vectorA}</span>
                   </span>
-                )}
-                {op === "cross" && (
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-4 h-2 bg-indigo-400/30 border border-indigo-400/50 inline-block rounded" />
-                    <span className="text-muted-foreground">
+                  {needsB && (
+                    <span className="flex items-center gap-1.5">
+                      <span className="inline-block h-0.5 w-4 rounded bg-red-600" />
+                      <span className="text-muted-foreground">{t.vectorB}</span>
+                    </span>
+                  )}
+                  {result?.vector && (
+                    <span className="flex items-center gap-1.5">
+                      <span className="inline-block h-0.5 w-4 rounded bg-green-600" />
+                      <span className="text-muted-foreground">{t.result}</span>
+                    </span>
+                  )}
+                  {op === "cross" && (
+                    <span className="flex items-center gap-1.5">
+                      <span className="inline-block h-2 w-4 rounded border border-indigo-400/50 bg-indigo-400/30" />
+                      <span className="text-muted-foreground">
+                        {lang === "zh"
+                          ? "平行四邊形（面積 = |a×b|）"
+                          : "Parallelogram (area = |a×b|)"}
+                      </span>
+                    </span>
+                  )}
+                  {(op === "add" || op === "sub") && (
+                    <span className="flex items-center gap-1.5">
+                      <span className="inline-block h-0.5 w-4 border-t border-dashed border-red-500" />
+                      <span className="text-muted-foreground">
+                        {lang === "zh" ? "首尾相接法" : "tip-to-tail"}
+                      </span>
+                    </span>
+                  )}
+                </div>
+              </section>
+
+              {result && !error && result.steps && result.steps.length > 0 && (
+                <details className="workspace-section vector-derivation group min-w-0 rounded-2xl border border-border bg-card text-card-foreground">
+                  <summary className="cursor-pointer rounded-2xl p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:p-5">
+                    <span className="ml-1 text-sm font-semibold">
+                      {t.steps}
+                    </span>
+                    <span className="ml-2 text-xs text-muted-foreground">
                       {lang === "zh"
-                        ? "平行四邊形（面積 = |a×b|）"
-                        : "Parallelogram (area = |a×b|)"}
+                        ? `${result.steps.length} 步 · 展開推導與同步播放`
+                        : `${result.steps.length} steps · expand for derivation & playback`}
                     </span>
-                  </span>
-                )}
-                {(op === "add" || op === "sub") && (
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-4 h-0.5 border-t border-dashed border-red-500 inline-block" />
-                    <span className="text-muted-foreground">
-                      {lang === "zh" ? "首尾相接法" : "tip-to-tail"}
-                    </span>
-                  </span>
-                )}
-              </div>
+                  </summary>
+                  <div className="min-w-0 border-t border-border p-4 sm:p-5">
+                    <StepDisplay
+                      steps={result.steps}
+                      title={t.steps}
+                      onStepChange={onDerivationStep}
+                    />
+                  </div>
+                </details>
+              )}
             </div>
           </div>
-
-          {/* Error */}
-          {error && (
-            <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive">
-              <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-              <p className="text-sm">{error}</p>
-            </div>
-          )}
-
-          {/* Result */}
-          {result && !error && (
-            <div className="space-y-4">
-              <div className="p-4 rounded-lg border border-accent/30 bg-accent/5">
-                <div className="flex items-center gap-2 mb-3">
-                  <CheckCircle2 className="w-4 h-4 text-accent" />
-                  <span className="text-sm font-semibold text-accent font-mono uppercase tracking-wide">
-                    {t.result}
-                  </span>
-                </div>
-                <div className="result-row overflow-x-auto">
-                  <KatexRenderer latex={result.exactLatex} displayMode />
-                </div>
-              </div>
-
-              {result.steps && result.steps.length > 0 && (
-                <StepDisplay steps={result.steps} title={t.steps} onStepChange={onDerivationStep} />
-              )}
-            </div>
-          )}
         </TabsContent>
       </Tabs>
     </div>

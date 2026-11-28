@@ -286,6 +286,40 @@ Phase 23 GitHub sync verified: feature checkpoint 8b00d28b19eb7ce414aff984884ee0
 - [x] 每 App 的繁中／英文偏好獨立保存，知識庫按單元篩選
 - [x] 原首頁加入三個獨立 App 入口及開發／部署說明
 - [x] 全套測試、TypeScript、四個產物建置、桌面／375px 手機實際驗收
-- [ ] checkpoint 後立即同步 GitHub，確認同 SHA Pages 成功與三個網址可用
+- [x] checkpoint 後立即同步 GitHub，確認同 SHA Pages 成功與三個網址可用
 
 Phase 24 acceptance: 798 tests / 26 files, application and Vite-config TypeScript, default and Pages builds, isolated APP_BASE=/ matrix deployment without integrated files, and actual desktop/375px touch checks all passed. Confirmed topic-only knowledge, same-origin isolated language persistence, query/hash deep reload, local cross-topic 404, exact system/matrix calculations and playback, vector six-stage normals/3D expansion/real vertex dragging/DSE, integrated homepage and LP, plus complete shared Tailwind utility styles. The normal managed preview dispatches compiled independent entries; no dependencies or lockfile changed. Fixed the existing over-escaped circumcentre Gram formula with a KaTeX rendering regression test.
+
+Phase 24 sync: initial workflow edit was rejected by the GitHub App's workflows permission. Restored the original workflow byte-for-byte and verified its index-to-404 fallback compatibility. Checkpoint c888922151c813f03a4bb9aaf5171ce59b9fabf5 was immediately pushed; Pages workflow 46165442704 succeeded for that exact SHA, main matched, and all three official app URLs returned HTTP 200 with their own titles.
+
+## Phase 25: Animated knowledge diagrams
+
+- [x] 共用圖解播放：播放／暫停／重播／單步／速度、真實幾何動畫與公式同步
+- [x] 行列式 2D 面積／3D 體積、符號方向及 det=0 退化動畫
+- [x] 矩陣重要知識：元素、加法、乘法、轉置、單位矩陣、逆、特徵方向／空間及特徵多項式
+- [x] 聯立方程重要知識：Ax=b／增廣矩陣、列變換／高斯、三類解、克拉默面積比
+- [x] 向量重要知識：分量／首尾／長度／單位化、內積與夾角、3D 叉積，保留原空間角動畫
+- [x] 既有知識卡全面動畫覆蓋、雙語、精確例子及單元邊界
+- [x] 模型／KaTeX 測試、完整建置、桌面／375px 手機幾何動畫及圖解控制驗收
+- [ ] 保存後立即 GitHub 同步、同 SHA Pages 成功、正式 App 網址驗證
+
+## Phase 26: System methods and terminology
+
+- [x] 唯一解以 Cramer 主解法；非方陣唯一解選獨立方程子系統並代回全部原式
+- [x] 其餘主解法 Gaussian；無解矛盾行、無限解任意 k／安全參數
+- [x] consistent／inconsistent、homogeneous／non-homogeneous、trivial／non-trivial 與兩秩分類
+- [x] 自訂 Latin／Greek 未知數、重複及非法符號防護，詞彙練習及雙語逐步推導
+- [x] 模型、KaTeX、桌面／手機完整驗收
+
+## Phase 27: Modern independent-app workspaces
+
+- [x] 三 App 的現代化共用導航／品牌，靛藍／紫／青綠單元識別，淺色低干擾工作區
+- [x] 矩陣整理輸入 → 結果 → 推導，長篇語法參考及提示收合
+- [x] 聯立方程整理輸入 → 分類／結果 → 主解法，替代方法收合
+- [x] 向量快捷分頁與清晰輸入／結果／圖解層次，保留空間角、四心與 DSE
+- [x] 知識庫以動畫為主，詳細概念／例子進階展開
+- [x] 手機快捷導航／觸控、深層刷新／404、雙語及無溢出回歸
+- [x] 完整 TypeScript、所有測試、四 App 建置與實際桌面／375px 驗收
+- [ ] checkpoint 後立即同步 GitHub，核對同 SHA Pages 成功及正式網址
+
+Phases 25–27 acceptance: 25 existing knowledge cards now have bilingual geometric meaning and diagram-led teaching, using 13 shared-clock SVG engines plus the retained point-defined spatial-angle scenes. Real geometry includes signed projection and angle arcs, 3D cross-product area/normal/curl/order reversal, determinant area/volume collapse, matrix composition and rectangular/adjoint mappings. Final unit suite: 1170 tests / 44 files and both TypeScript configurations passed. Full four-app Pages and normal production builds passed. Actual desktop/375px acceptance passed for all 25 cards, real numerical SVG motion/play/pause/replay/steps/speed/visibility, determinant 2D/3D positive/negative/zero/shear, unique marker IDs, reduced motion, all new exact system/matrix/vector tools and practice answers, scoped routes/404 and no overflow/English CJK/KaTeX/page errors. All dot/cross presets and true normal reversal passed against the Pages artifacts. APP_BASE=/ matrix-only build and routes passed without integrated files. Retained mouse/touch four-centre dragging and construction, four-point pure-vector normal flip 45°/135° with six-stage/expanded 3D, DSE, isolated language persistence, integrated homepage and LP all passed. The refreshed normal managed preview also passed all three compiled app roots, deep query/hash reloads and integrated/LP checks with no asset or runtime errors. Cross product is correctly distinguished from the matrix-valued outer product; zero-vector angles and normal-direction degeneracies are explicit. Original deployment workflow is byte-for-byte unchanged. GitHub synchronization and matching-SHA Pages verification follow this checkpoint.

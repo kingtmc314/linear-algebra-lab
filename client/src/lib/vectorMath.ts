@@ -166,7 +166,7 @@ export function vecCross(a: Vec3, b: Vec3): VectorResult {
 
   steps.push({
     descriptionZh: "計算 3D 向量的叉積（外積）",
-    descriptionEn: "Computing cross product (outer product) of 3D vectors",
+    descriptionEn: "Computing the cross product (vector product) of 3D vectors",
     latex: `\\mathbf{a} = ${vecToLatex(a)},\\quad \\mathbf{b} = ${vecToLatex(b)}`,
   });
 

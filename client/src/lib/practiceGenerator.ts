@@ -19,7 +19,8 @@ import {
   fmt,
 } from "./matrixMath";
 import { vecAdd, vecSub, vecDot, vecCross, vecMagnitude } from "./vectorMath";
-import { solveLinearSystem } from "./linearSystem";
+import { buildSystemTeaching, SYSTEM_PRESETS } from "./systemTeaching";
+import { ratAugLatex, fromFloat, rat, ratToLatex } from "./rational";
 import { computeEigen } from "./eigenMath";
 
 // ─── Tolerance ───────────────────────────────────────────────────────────────
@@ -265,49 +266,179 @@ export function generateMatrixQuestion(
 
 // ─── Linear System Practice Questions ────────────────────────────────────────
 
-export function generateLinearSystemQuestion(lang: "zh" | "en" = "zh"): PracticeQuestion {
-  // Generate a 2×2 or 3×3 system with a unique solution
-  const size = ri(2, 3);
-  let A: Matrix, b: number[], x: number[];
-
-  if (size === 2) {
-    // Ensure unique solution: generate x first, then compute b = Ax
-    x = [rnz(4), rnz(4)];
-    A = randInvertible2x2(3);
-    b = [A[0][0]*x[0] + A[0][1]*x[1], A[1][0]*x[0] + A[1][1]*x[1]];
+export function generateLinearSystemQuestion(
+  lang: "zh" | "en" = "zh",
+  options: {
+    random?: () => number;
+    variant?: "solve" | "classify" | "method";
+    preset?: number;
+  } = {}
+): PracticeQuestion {
+  // Constructive generation is bounded even when the RNG always returns zero.
+  const random = options.random ?? Math.random;
+  const integer = (lo: number, hi: number) => {
+    const sample = random();
+    const bounded = Number.isFinite(sample)
+      ? Math.max(0, Math.min(0.999999999, sample))
+      : 0;
+    return lo + Math.floor(bounded * (hi - lo + 1));
+  };
+  const variant =
+    options.variant ??
+    (["solve", "classify", "method"] as const)[integer(0, 2)];
+  let A: Matrix, b: number[];
+  if (variant === "solve") {
+    const n = integer(2, 3);
+    const lower = Array.from({ length: n }, (_, i) =>
+      Array.from({ length: n }, (_, j) =>
+        i === j ? 1 : i > j ? integer(-2, 2) : 0
+      )
+    );
+    const upper = Array.from({ length: n }, (_, i) =>
+      Array.from({ length: n }, (_, j) =>
+        i === j
+          ? integer(1, 3) * (integer(0, 1) ? 1 : -1)
+          : i < j
+            ? integer(-2, 2)
+            : 0
+      )
+    );
+    A = lower.map(row =>
+      upper[0].map((_, j) =>
+        row.reduce((sum, value, k) => sum + value * upper[k][j], 0)
+      )
+    );
+    const x = Array.from({ length: n }, () => integer(-4, 4));
+    b = A.map(row => row.reduce((sum, value, j) => sum + value * x[j], 0));
   } else {
-    x = [rnz(3), rnz(3), rnz(3)];
-    A = randInvertible3x3(3);
-    b = [
-      A[0][0]*x[0] + A[0][1]*x[1] + A[0][2]*x[2],
-      A[1][0]*x[0] + A[1][1]*x[1] + A[1][2]*x[2],
-      A[2][0]*x[0] + A[2][1]*x[1] + A[2][2]*x[2],
-    ];
+    // Five taxonomy presets plus consistent/inconsistent overdetermined systems.
+    const requested = options.preset;
+    const presetIndex =
+      requested === undefined
+        ? integer(0, 6)
+        : Math.max(
+            0,
+            Math.min(6, Math.floor(Number.isFinite(requested) ? requested : 0))
+          );
+    if (presetIndex < SYSTEM_PRESETS.length) {
+      const preset = SYSTEM_PRESETS[presetIndex];
+      const scale = integer(1, 3);
+      A = preset.A.map(row => row.map(value => value * scale));
+      b = preset.b.map(value => value * scale);
+    } else {
+      A = [
+        [0, 1],
+        [2, 1],
+        [4, 3],
+      ];
+      b = [1, 3, presetIndex === 5 ? 7 : 8];
+    }
   }
-
-  // Build augmented matrix LaTeX
-  const augRows = A.map((row, i) => [...row, b[i]]);
-  const augLatex = `\\left(\\begin{array}{${"c".repeat(size)}|c} ${
-    augRows.map((row) => row.join(" & ")).join(" \\\\ ")
-  } \\end{array}\\right)`;
-
-  const xLatex = size === 2
-    ? `x_1 = ${x[0]},\\quad x_2 = ${x[1]}`
-    : `x_1 = ${x[0]},\\quad x_2 = ${x[1]},\\quad x_3 = ${x[2]}`;
-
+  const teaching = buildSystemTeaching(A, b, lang);
+  const { taxonomy } = teaching;
+  const augLatex = ratAugLatex(
+    A.map((row, i) => [...row.map(value => fromFloat(value)), fromFloat(b[i])]),
+    taxonomy.n
+  );
+  const solutionSteps = teaching.steps;
+  if (variant === "solve") {
+    const values = teaching.cramer!.replacements.map(
+      replacement => replacement.value
+    );
+    return {
+      questionLatex: `${lang === "zh" ? "\\text{用 Cramer 法則求解：}" : "\\text{Solve using Cramer's rule:}"}\\quad ${augLatex}`,
+      inputHint:
+        lang === "zh"
+          ? `依 x₁ 至 x${taxonomy.n} 順序，用空格分隔數值（可輸入整數或分數，例如 1 -2 3/4）。`
+          : `Enter values in x1 through x${taxonomy.n} order, separated by spaces (integers or fractions, e.g. 1 -2 3/4).`,
+      answerDisplay: values
+        .map(value =>
+          value.d === 1n ? value.n.toString() : `${value.n}/${value.d}`
+        )
+        .join(" "),
+      answerLatex: teaching.solutionLatex!,
+      solutionSteps,
+      checkAnswer: input => {
+        const tokens = input.trim().split(/[\s,]+/);
+        if (tokens.length !== values.length) return false;
+        return tokens.every((token, i) => {
+          const fraction = token.match(/^([+-]?\d+)(?:\/(\d+))?$/);
+          if (token.length > 128) return false;
+          try {
+            let value;
+            if (fraction) {
+              value = rat(BigInt(fraction[1]), BigInt(fraction[2] ?? "1"));
+            } else {
+              if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(token)) return false;
+              const negative = token.startsWith("-");
+              const [whole, decimal = ""] = token
+                .replace(/^[+-]/, "")
+                .split(".");
+              value = rat(
+                (negative ? -1n : 1n) * BigInt((whole || "0") + decimal),
+                10n ** BigInt(decimal.length)
+              );
+            }
+            return ratToLatex(value) === ratToLatex(values[i]);
+          } catch {
+            return false;
+          }
+        });
+      },
+    };
+  }
+  const keywords =
+    variant === "method"
+      ? [taxonomy.method === "cramer" ? "cramer" : "gaussian"]
+      : [
+          taxonomy.consistent ? "consistent" : "inconsistent",
+          taxonomy.homogeneous ? "homogeneous" : "nonhomogeneous",
+          taxonomy.type === "none" ? "none" : taxonomy.type,
+        ];
+  // Exact keyword normalization, not substring matching: inconsistent must not match consistent.
+  const checkKeywords = (input: string) => {
+    const text = input
+      .toLowerCase()
+      .trim()
+      .replace(/cramer['’]?s?(?:\s+rule)?/g, "cramer")
+      .replace(/gaussian(?:\s+elimination)?/g, "gaussian")
+      .replace(/non[-\s]?homogeneous/g, "nonhomogeneous")
+      .replace(
+        /infinitely\s+many(?:\s+solutions)?|infinite\s+solutions/g,
+        "infinite"
+      )
+      .replace(/unique\s+solution/g, "unique")
+      .replace(/no\s+solutions?/g, "none")
+      .replace(/不相容|不一致/g, " inconsistent ")
+      .replace(/相容|一致/g, " consistent ")
+      .replace(/非齊次/g, " nonhomogeneous ")
+      .replace(/齊次/g, " homogeneous ")
+      .replace(/無限多解/g, " infinite ")
+      .replace(/唯一解/g, " unique ")
+      .replace(/無解/g, " none ")
+      .replace(/克拉瑪(?:法則)?|克拉默(?:法則)?/g, " cramer ")
+      .replace(/高斯(?:消去法|消元法|消去|消元)?/g, " gaussian ");
+    const tokens = text.split(/[\s,，;；/、]+/).filter(Boolean);
+    return (
+      tokens.length === keywords.length &&
+      new Set(tokens).size === keywords.length &&
+      keywords.every(keyword => tokens.includes(keyword))
+    );
+  };
   return {
-    questionLatex: `${lang === "zh" ? "\\text{解方程組：}" : "\\text{Solve the system:}"}\\quad ${augLatex}`,
-    inputHint: lang === "zh"
-      ? `輸入解，用空格分隔。例：${size === 2 ? "1 -2" : "1 -2 3"}（即 x₁ x₂${size === 3 ? " x₃" : ""}）`
-      : `Enter solution separated by spaces. E.g. ${size === 2 ? "1 -2" : "1 -2 3"} (i.e. x₁ x₂${size === 3 ? " x₃" : ""})`,
-    answerDisplay: x.join(", "),
-    answerLatex: xLatex,
-    solutionSteps: solveLinearSystem(A, b).steps,
-    checkAnswer: (s) => {
-      const v = parseVector(s);
-      if (!v || v.length !== size) return false;
-      return x.every((xi, i) => approx(v[i], xi));
-    },
+    questionLatex: `${variant === "method" ? (lang === "zh" ? "\\text{選主要解法：Cramer 或 Gaussian？}" : "\\text{Choose the primary method: Cramer or Gaussian?}") : lang === "zh" ? "\\text{判斷一致性、齊次性與解的類型：}" : "\\text{Classify consistency, homogeneity and solution type:}"}\\quad ${augLatex}`,
+    inputHint:
+      variant === "method"
+        ? lang === "zh"
+          ? "輸入 cramer 或 gaussian；唯一解用 Cramer，其餘用 Gaussian。"
+          : "Enter cramer or gaussian: Cramer for unique solutions, Gaussian otherwise."
+        : lang === "zh"
+          ? "輸入三個詞：consistent / inconsistent、homogeneous / nonhomogeneous、unique / infinite / none（亦接受相容／不相容、齊次／非齊次、唯一解／無限多解／無解）。"
+          : "Enter three keywords: consistent / inconsistent, homogeneous / nonhomogeneous, unique / infinite / none. Separate them with spaces; order does not matter.",
+    answerDisplay: keywords.join(", "),
+    answerLatex: keywords.map(keyword => `\\text{${keyword}}`).join(",\\quad "),
+    solutionSteps,
+    checkAnswer: checkKeywords,
   };
 }
 

@@ -11,6 +11,8 @@ import {
 import KatexRenderer from "@/components/KatexRenderer";
 import StepDisplay from "@/components/StepDisplay";
 import SpatialKnowledgeExample from "@/components/SpatialKnowledgeExample";
+import KnowledgeDiagram from "@/components/knowledge/KnowledgeDiagram";
+import { knowledgeGeometry } from "@/lib/knowledgeGeometry";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -53,10 +55,13 @@ function KnowledgeCard({
   const title = lang === "zh" ? item.titleZh : item.titleEn;
   const isSpatialAngle =
     item.id === "vec-plane-plane-angle" || item.id === "vec-line-plane-angle";
+  const ReferenceContainer = isSpatialAngle ? "div" : "details";
+  const geometry = knowledgeGeometry[item.id];
 
   return (
     <Card
-      className={`min-w-0 border bg-card text-card-foreground transition-shadow duration-200 hover:shadow-md ${expanded ? "sm:col-span-2 xl:col-span-3 border-primary/40 shadow-sm" : "border-border"}`}
+      data-testid={`knowledge-card-${item.id}`}
+      className={`knowledge-card min-w-0 border bg-card text-card-foreground transition-shadow duration-200 hover:shadow-md ${expanded ? "knowledge-card-expanded sm:col-span-2 xl:col-span-3 border-primary/40 shadow-sm" : "border-border"}`}
     >
       <CardHeader className="pb-3 pt-4 px-4">
         <CardTitle className="text-base font-semibold leading-snug">
@@ -85,8 +90,8 @@ function KnowledgeCard({
         )}
         <p className="text-xs text-muted-foreground">
           {lang === "zh"
-            ? "變數與條件 · 公式講解 · 例子逐步播放"
-            : "Variables & conditions · Formula walkthrough · Example playback"}
+            ? "動畫圖解 · 變數與條件 · 公式及例子播放"
+            : "Animated diagram · Variables & conditions · Formula & example playback"}
         </p>
       </CardHeader>
 
@@ -103,54 +108,79 @@ function KnowledgeCard({
             transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
           >
             <CardContent className="px-4 pb-4 pt-0 space-y-4">
-              <div className="rounded-lg border border-primary/15 bg-primary/5 p-3 text-sm leading-relaxed text-foreground">
-                {lang === "zh"
-                  ? "先認識符號與適用條件，再播放公式及例子。定義卡呈現教學順序；計算卡逐步顯示經核對的運算，不把定義冒充推導。"
-                  : "Start with symbols and conditions, then play the formula and example. Definition cards present a teaching sequence; calculation cards show reviewed arithmetic steps, not a claimed derivation of a definition."}
-              </div>
-              <div
-                className={`grid min-w-0 gap-4 ${lesson.exampleSteps.length > 0 ? "lg:grid-cols-2" : ""}`}
-              >
-                <div className="min-w-0">
-                  <StepDisplay
-                    steps={lesson.conceptSteps}
-                    title={
-                      lang === "zh"
-                        ? "概念：變數 → 公式 → 解釋"
-                        : "Concept: variables → formula → explanation"
-                    }
-                  />
-                </div>
-                {lesson.exampleSteps.length > 0 && (
-                  <div className="min-w-0">
-                    {isSpatialAngle ? (
-                      <SpatialKnowledgeExample
-                        mode={
-                          item.id === "vec-plane-plane-angle"
-                            ? "plane-plane"
-                            : "line-plane"
-                        }
-                        steps={lesson.exampleSteps}
-                        lang={lang}
-                        title={
-                          lang === "zh"
-                            ? "四點例子：向量推導與示意圖"
-                            : "Four-point example: vectors & diagram"
-                        }
-                      />
-                    ) : (
-                      <StepDisplay
-                        steps={lesson.exampleSteps}
-                        title={
-                          lang === "zh"
-                            ? "例子：逐步演算與原例對照"
-                            : "Example: worked steps & original summary"
-                        }
-                      />
-                    )}
+              {!isSpatialAngle && (
+                <KnowledgeDiagram itemId={item.id} lang={lang} />
+              )}
+              {geometry && (
+                <aside
+                  data-testid="knowledge-geometric-meaning"
+                  className="border-l-2 border-primary/50 bg-primary/5 px-4 py-3 space-y-2"
+                >
+                  <h4 className="text-xs font-semibold text-primary">
+                    {lang === "zh" ? "幾何意義" : "Geometric meaning"}
+                  </h4>
+                  <p className="text-sm leading-relaxed text-foreground">
+                    {lang === "zh" ? geometry.zh : geometry.en}
+                  </p>
+                  <div className="max-w-full overflow-x-auto text-sm">
+                    <KatexRenderer latex={geometry.latex} displayMode={false} />
                   </div>
+                </aside>
+              )}
+              <ReferenceContainer
+                className={isSpatialAngle ? "" : "knowledge-reference"}
+              >
+                {!isSpatialAngle && (
+                  <summary>
+                    {lang === "zh"
+                      ? "深入閱讀：符號、條件及完整演算"
+                      : "Read more: symbols, conditions & full worked example"}
+                  </summary>
                 )}
-              </div>
+                <div
+                  className={`grid min-w-0 gap-4 ${isSpatialAngle ? "" : "knowledge-reference-content"} ${lesson.exampleSteps.length > 0 ? "lg:grid-cols-2" : ""}`}
+                >
+                  <div className="min-w-0">
+                    <StepDisplay
+                      steps={lesson.conceptSteps}
+                      title={
+                        lang === "zh"
+                          ? "概念：變數 → 公式 → 解釋"
+                          : "Concept: variables → formula → explanation"
+                      }
+                    />
+                  </div>
+                  {lesson.exampleSteps.length > 0 && (
+                    <div className="min-w-0">
+                      {isSpatialAngle ? (
+                        <SpatialKnowledgeExample
+                          mode={
+                            item.id === "vec-plane-plane-angle"
+                              ? "plane-plane"
+                              : "line-plane"
+                          }
+                          steps={lesson.exampleSteps}
+                          lang={lang}
+                          title={
+                            lang === "zh"
+                              ? "四點例子：向量推導與示意圖"
+                              : "Four-point example: vectors & diagram"
+                          }
+                        />
+                      ) : (
+                        <StepDisplay
+                          steps={lesson.exampleSteps}
+                          title={
+                            lang === "zh"
+                              ? "例子：逐步演算與原例對照"
+                              : "Example: worked steps & original summary"
+                          }
+                        />
+                      )}
+                    </div>
+                  )}
+                </div>
+              </ReferenceContainer>
               {topicSlug === "vector" && isSpatialAngle && (
                 <Link
                   href="/vector?tab=spatial"
@@ -249,7 +279,7 @@ export default function KnowledgePage({
   );
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
+    <div className="knowledge-library max-w-6xl mx-auto space-y-7">
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <BookOpen
@@ -262,13 +292,8 @@ export default function KnowledgePage({
         </div>
         <p className="text-muted-foreground">
           {lang === "zh"
-            ? `共 ${totalConcepts} 個線性代數核心概念，展開卡片查看變數、條件及可重播的公式與例子`
-            : `${totalConcepts} core linear algebra concepts — expand a card for variables, conditions, and replayable formulas and examples`}
-        </p>
-        <p className="text-sm text-muted-foreground">
-          {lang === "zh"
-            ? "完整檢視可對照全部步驟；逐步播放可暫停、重播及調整速度。精確分數、根式與特殊角保持原式；近似值一律以 ≈ 標示。"
-            : "Compare all steps in the full view, or play them with pause, replay, and speed controls. Exact fractions, radicals, and special angles stay symbolic; approximations are marked ≈."}
+            ? `${totalConcepts} 個核心概念。選一張卡，播放動畫，再深入完整演算。`
+            : `${totalConcepts} core concepts. Choose a card, play the diagram, then explore the worked example.`}
         </p>
       </div>
 
@@ -294,34 +319,36 @@ export default function KnowledgePage({
             onChange={event => setSearchQuery(event.target.value)}
           />
         </div>
-        <div
-          className="flex gap-2 flex-wrap"
-          role="group"
-          aria-label={lang === "zh" ? "概念分類" : "Concept categories"}
-        >
-          {[
-            { slug: "all", zh: "全部", en: "All" },
-            ...ownedTopics.map(topic => ({
-              slug: topic.slug,
-              zh: topic.titleZh,
-              en: topic.titleEn,
-            })),
-          ].map(filter => (
-            <button
-              key={filter.slug}
-              type="button"
-              aria-pressed={activeFilter === filter.slug}
-              onClick={() => setActiveFilter(filter.slug)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-                activeFilter === filter.slug
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-card border-border text-foreground hover:bg-secondary"
-              }`}
-            >
-              {lang === "zh" ? filter.zh : filter.en}
-            </button>
-          ))}
-        </div>
+        {ownedTopics.length > 1 && (
+          <div
+            className="flex gap-2 flex-wrap"
+            role="group"
+            aria-label={lang === "zh" ? "概念分類" : "Concept categories"}
+          >
+            {[
+              { slug: "all", zh: "全部", en: "All" },
+              ...ownedTopics.map(topic => ({
+                slug: topic.slug,
+                zh: topic.titleZh,
+                en: topic.titleEn,
+              })),
+            ].map(filter => (
+              <button
+                key={filter.slug}
+                type="button"
+                aria-pressed={activeFilter === filter.slug}
+                onClick={() => setActiveFilter(filter.slug)}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                  activeFilter === filter.slug
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-card border-border text-foreground hover:bg-secondary"
+                }`}
+              >
+                {lang === "zh" ? filter.zh : filter.en}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       <p className="text-xs text-muted-foreground" role="status">
         {lang === "zh"

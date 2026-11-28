@@ -111,13 +111,16 @@ describe("Phase20systems exact contextual derivations", () => {
 
   it("keeps the page's players independent with stable callbacks and no timers", () => {
     const page = readFileSync(new URL("../pages/LinearSystemPage.tsx", import.meta.url), "utf8");
-    expect(page.match(/<StepDisplay /g)).toHaveLength(2);
+    expect(page.match(/<StepDisplay\s/g)).toHaveLength(3);
+    expect(page).toContain("onStepChange={onPrimaryStepChange}");
     expect(page).toContain("onStepChange={onGaussianStepChange}");
     expect(page).toContain("onStepChange={onInverseStepChange}");
+    expect(page).toContain("const onPrimaryStepChange = useCallback");
     expect(page).toContain("const onGaussianStepChange = useCallback");
     expect(page).toContain("const onInverseStepChange = useCallback");
     expect(page).not.toMatch(/setInterval|setTimeout|slice\(0, 8\)/);
-    expect(page).toContain("x_{${j + 1}}");
+    expect(page).toContain("variables[j].latex");
+    expect(page).toContain("validateSystemVariables(rawNames, numVar)");
   });
 
   it("attaches exact synchronized augmented snapshots to every Gaussian stage", () => {

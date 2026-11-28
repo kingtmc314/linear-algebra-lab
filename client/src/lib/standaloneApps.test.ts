@@ -41,6 +41,7 @@ const ownedPaths: Record<StandaloneAppId, string[]> = {
     "/vector",
     "/vector?tab=spatial",
     "/vector?tab=centers",
+    "/vector?tab=practice",
     "/vector?tab=dse",
     "/knowledge",
   ],
@@ -123,7 +124,7 @@ describe("standalone app metadata", () => {
         expect(pathname).toBe("/vector");
         return new URLSearchParams(query).get("tab");
       });
-    expect(tabs).toEqual(["spatial", "centers", "dse"]);
+    expect(tabs).toEqual(["spatial", "centers", "practice", "dse"]);
   });
 
   it("filters knowledge using only existing topic slugs with no overlap", () => {

@@ -133,6 +133,12 @@ export const standaloneApps: Record<StandaloneAppId, StandaloneAppConfig> = {
         icon: "Triangle",
       },
       {
+        path: "/vector?tab=practice",
+        labelZh: "向量練習",
+        labelEn: "Vector practice",
+        icon: "GraduationCap",
+      },
+      {
         path: "/vector?tab=dse",
         labelZh: "DSE 向量專區",
         labelEn: "DSE vector practice",

@@ -1340,3 +1340,50 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+/* Knowledge diagrams: a compact scene and synchronized reading panel. */
+.knowledge-card-expanded {
+  scroll-margin-top: 20px;
+}
+.knowledge-lesson-body {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  align-items: start;
+}
+.knowledge-lesson-aside {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.knowledge-library .knowledge-card {
+  border-radius: 14px;
+}
+.knowledge-library .knowledge-reference {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+}
+.knowledge-reference > summary {
+  cursor: pointer;
+  padding: 14px 16px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.knowledge-reference[open] > summary {
+  border-bottom: 1px solid var(--border);
+}
+.knowledge-reference-content {
+  padding: 16px;
+}
+@media (min-width: 1280px) {
+  .knowledge-lesson-body {
+    grid-template-columns: minmax(0, 1.35fr) minmax(270px, 0.8fr);
+  }
+}
+@media (max-width: 639px) {
+  .knowledge-reference-content {
+    padding: 12px;
+  }
+}

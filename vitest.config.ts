@@ -5,6 +5,7 @@ const templateRoot = path.resolve(import.meta.dirname);
 
 export default defineConfig({
   root: templateRoot,
+  esbuild: { jsx: "automatic" },
   resolve: {
     alias: {
       "@": path.resolve(templateRoot, "client", "src"),
@@ -19,6 +20,7 @@ export default defineConfig({
       "server/**/*.spec.ts",
       "client/src/lib/**/*.test.ts",
       "client/src/lib/**/*.spec.ts",
+      "client/src/components/knowledge/**/*.test.ts",
     ],
   },
 });

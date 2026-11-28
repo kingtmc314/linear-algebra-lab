@@ -40,6 +40,7 @@ import {
   standaloneLanguageKey,
   type StandaloneAppId,
 } from "@/lib/standaloneApps";
+import "./design.css";
 
 const KnowledgePage = lazy(() => import("@/pages/KnowledgePage"));
 const icons: Record<string, typeof Sigma> = {
@@ -106,7 +107,7 @@ function AppLayout({
       ? tab === new URLSearchParams(query).get("tab")
       : !(
           pathname === "/vector" &&
-          ["centers", "dse", "spatial"].includes(tab ?? "")
+          ["centers", "dse", "spatial", "practice"].includes(tab ?? "")
         );
   };
   const currentRoute = app.routes.find(route => isActive(route.path));
@@ -177,8 +178,8 @@ function AppLayout({
           <span aria-hidden="true">{app.formula}</span>
           <p>
             {lang === "zh"
-              ? "專注一個單元，逐步看懂。"
-              : "One subject. Understand every step."}
+              ? "計算、探索，然後看懂每一步。"
+              : "Calculate. Explore. Understand."}
           </p>
         </div>
         <LanguageSwitch />
@@ -187,7 +188,11 @@ function AppLayout({
   );
   const Primary = pages[app.primaryPath];
   return (
-    <div className="lab-shell" data-testid="standalone-app" data-app={id}>
+    <div
+      className="lab-shell standalone-shell"
+      data-testid="standalone-app"
+      data-app={id}
+    >
       <a
         className="lab-skip-link"
         href="#main-content"
@@ -211,7 +216,11 @@ function AppLayout({
                   <Menu size={21} aria-hidden="true" />
                 </button>
               </SheetTrigger>
-              <SheetContent side="left" className="lab-sidebar-sheet">
+              <SheetContent
+                side="left"
+                className="lab-sidebar-sheet standalone-shell standalone-drawer"
+                data-app={id}
+              >
                 <SheetTitle className="sr-only">
                   {lang === "zh" ? "導覽選單" : "Navigation menu"}
                 </SheetTitle>
@@ -250,6 +259,27 @@ function AppLayout({
             <ArrowUpRight size={14} aria-hidden="true" />
           </Link>
         </header>
+        <nav
+          className="standalone-mobile-tabs"
+          aria-label={
+            lang === "zh" ? "本 App 快捷分頁" : "This app's quick tabs"
+          }
+        >
+          {app.routes.map(route => {
+            const Icon = icons[route.icon] ?? BookOpen;
+            return (
+              <Link
+                key={route.path}
+                href={route.path}
+                className={isActive(route.path) ? "active" : ""}
+                aria-current={isActive(route.path) ? "page" : undefined}
+              >
+                <Icon size={15} aria-hidden="true" />
+                <span>{lang === "zh" ? route.labelZh : route.labelEn}</span>
+              </Link>
+            );
+          })}
+        </nav>
         <main
           id="main-content"
           ref={mainRef}
@@ -258,7 +288,7 @@ function AppLayout({
         >
           <div className="lab-page-content">
             <p
-              className="mb-4 text-xs tracking-wide text-muted-foreground"
+              className="standalone-page-eyebrow"
               data-testid="standalone-brand"
             >
               {title} · {lang === "zh" ? "獨立 Web App" : "Independent web app"}
