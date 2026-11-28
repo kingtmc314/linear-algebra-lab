@@ -301,7 +301,7 @@ Phase 24 sync: initial workflow edit was rejected by the GitHub App's workflows 
 - [x] 向量重要知識：分量／首尾／長度／單位化、內積與夾角、3D 叉積，保留原空間角動畫
 - [x] 既有知識卡全面動畫覆蓋、雙語、精確例子及單元邊界
 - [x] 模型／KaTeX 測試、完整建置、桌面／375px 手機幾何動畫及圖解控制驗收
-- [ ] 保存後立即 GitHub 同步、同 SHA Pages 成功、正式 App 網址驗證
+- [x] 保存後立即 GitHub 同步、同 SHA Pages 成功、正式 App 網址驗證
 
 ## Phase 26: System methods and terminology
 
@@ -320,6 +320,8 @@ Phase 24 sync: initial workflow edit was rejected by the GitHub App's workflows 
 - [x] 知識庫以動畫為主，詳細概念／例子進階展開
 - [x] 手機快捷導航／觸控、深層刷新／404、雙語及無溢出回歸
 - [x] 完整 TypeScript、所有測試、四 App 建置與實際桌面／375px 驗收
-- [ ] checkpoint 後立即同步 GitHub，核對同 SHA Pages 成功及正式網址
+- [x] checkpoint 後立即同步 GitHub，核對同 SHA Pages 成功及正式網址
 
 Phases 25–27 acceptance: 25 existing knowledge cards now have bilingual geometric meaning and diagram-led teaching, using 13 shared-clock SVG engines plus the retained point-defined spatial-angle scenes. Real geometry includes signed projection and angle arcs, 3D cross-product area/normal/curl/order reversal, determinant area/volume collapse, matrix composition and rectangular/adjoint mappings. Final unit suite: 1170 tests / 44 files and both TypeScript configurations passed. Full four-app Pages and normal production builds passed. Actual desktop/375px acceptance passed for all 25 cards, real numerical SVG motion/play/pause/replay/steps/speed/visibility, determinant 2D/3D positive/negative/zero/shear, unique marker IDs, reduced motion, all new exact system/matrix/vector tools and practice answers, scoped routes/404 and no overflow/English CJK/KaTeX/page errors. All dot/cross presets and true normal reversal passed against the Pages artifacts. APP_BASE=/ matrix-only build and routes passed without integrated files. Retained mouse/touch four-centre dragging and construction, four-point pure-vector normal flip 45°/135° with six-stage/expanded 3D, DSE, isolated language persistence, integrated homepage and LP all passed. The refreshed normal managed preview also passed all three compiled app roots, deep query/hash reloads and integrated/LP checks with no asset or runtime errors. Cross product is correctly distinguished from the matrix-valued outer product; zero-vector angles and normal-direction degeneracies are explicit. Original deployment workflow is byte-for-byte unchanged. GitHub synchronization and matching-SHA Pages verification follow this checkpoint.
+
+Phases 25–27 GitHub sync verified: feature checkpoint 3acedd210112acc58ad009d281cca89a0ac970b5 was pushed immediately to GitHub main. Matching-SHA Pages workflow 46169482919 completed successfully, and main was verified to match. All three official app roots returned HTTP 200; their knowledge deep links correctly recovered through the original external-JavaScript SPA 404 bootstrap, with each modern app, scoped card count, geometric meaning and real diagram play/pause verified in the live public browser and no asset/runtime errors. All todo items are complete. This completion-record checkpoint is also immediately synchronized and its own matching-SHA deployment verified before final delivery.
